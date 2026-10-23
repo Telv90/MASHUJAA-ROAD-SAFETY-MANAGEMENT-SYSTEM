@@ -51,7 +51,7 @@ def register_accident():
         incident["cause_code"] = input(
             "Enter the accident cause code: "
         )
-        incident["Victim"] = input(
+        incident["victim"] = input(
             "Enter the victim type (cyclist/pedestrian etc.): "
         )
         incident["fatalities"] = int(input(
@@ -60,10 +60,10 @@ def register_accident():
         incident["date"] = input(
             "Enter the accident date (DD/MM/YYYY): "
         )
+        incident["base"]=input(
+            "Enter the base location of the accident: "
+        )
 
-        if incident["age"] < 0 or incident["fatalities"] < 0:
-            print("Age and fatalities cannot be negative.")
-            return
 
     except ValueError:
         print("Age and fatalities must be valid integers!")
