@@ -164,6 +164,9 @@ class RoadSafetyWebAppTests(unittest.TestCase):
         dashboard = self.client.get("/")
         self.assertIn(b"trend-chart", dashboard.data)
         self.assertIn(b"filter-panel", dashboard.data)
+        self.assertIn(b'id="chart-data"', dashboard.data)
+        analytics = self.client.get("/analytics")
+        self.assertIn(b'id="chart-data"', analytics.data)
 
     def test_incident_risk_and_report_export(self):
         response = self.client.get("/incidents/A-100/risk")

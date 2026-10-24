@@ -133,6 +133,19 @@ Passwords are stored as hashes. Use HTTPS and a production WSGI server for
 network deployments. Do not expose Flask's built-in development server to the
 public internet. Set `FLASK_COOKIE_SECURE=1` when serving over HTTPS.
 
+### Deploying on Render
+
+Create a Render Web Service connected to this repository and use:
+
+- **Build command:** `pip install -r requirements.txt`
+- **Start command:** `gunicorn app:app`
+
+Set the required environment variables in Render before the first deployment.
+For SQLite, attach a persistent disk mounted at `/var/data` and set
+`TUSALAMA_DATABASE_PATH` to `/var/data/tusalama.sqlite3`; otherwise the database
+may be lost when the service is redeployed. See Render's current persistent-disk
+plan and availability limits before relying on SQLite for production backups.
+
 ## Forecasting and maps
 
 Hotspot forecasts use explainable historical trends, not a trained machine

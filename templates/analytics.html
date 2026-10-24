@@ -10,6 +10,7 @@
     <section class="panel chart-panel"><div class="panel-heading"><div><h2>Incident trend</h2><p>Recorded incidents by month</p></div></div><canvas class="chart-canvas" id="trend-chart" aria-label="Incidents per month" role="img"></canvas></section>
     <section class="panel chart-panel"><div class="panel-heading"><div><h2>Top hotspot locations</h2><p>Most frequent locations in this view</p></div></div><canvas class="chart-canvas" id="hotspot-chart" aria-label="Incident counts by hotspot" role="img"></canvas></section>
   </div>
+  <script id="chart-data" type="application/json">{{ chart_data|tojson }}</script>
   <section class="panel map-panel">
     <div class="panel-heading"><div><h2>Incident location map</h2><p>Exact markers are shown only for records with saved GPS coordinates.</p></div><span class="count-pill">{{ map_points|length }} mapped incidents</span></div>
     {% if map_points %}
