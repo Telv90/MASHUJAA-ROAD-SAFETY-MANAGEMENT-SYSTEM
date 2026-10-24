@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Admin{% endblock %}
+{% block breadcrumb %}Admin{% endblock %}
+{% block content %}
+  <div class="page-heading"><div><div class="eyebrow">SYSTEM ADMINISTRATION</div><h1>Admin panel</h1><p>Application access and local database status.</p></div><span class="badge badge-low">Administrator signed in</span></div>
+  <div class="stat-grid admin-stats">
+    <article class="stat-card"><div class="stat-top"><span class="stat-icon icon-green">✓</span><span class="stat-label">Access control</span></div><strong class="stat-word">Enabled</strong><small>Password-protected administrator session</small></article>
+    <article class="stat-card"><div class="stat-top"><span class="stat-icon icon-blue">▤</span><span class="stat-label">Incident records</span></div><strong>{{ incident_count }}</strong><small>Available in the active CSV register</small></article>
+    <article class="stat-card"><div class="stat-top"><span class="stat-icon icon-orange">⌂</span><span class="stat-label">Storage</span></div><strong class="stat-word">SQLite</strong><small>{{ data_file }}</small></article>
+    <article class="stat-card"><div class="stat-top"><span class="stat-icon icon-red">⌖</span><span class="stat-label">Map coordinates</span></div><strong class="stat-word">Optional</strong><small>Enter GPS coordinates per incident</small></article>
+  </div>
+  <section class="panel admin-guidance"><div class="panel-heading"><div><h2>Administrator settings</h2><p>Credentials are configured outside the source code.</p></div></div>
+    <div class="admin-setting"><div><strong>Administrator password</strong><p>Set <code>ROAD_SAFETY_ADMIN_PASSWORD</code>, <code>ROAD_SAFETY_ADMIN_USERNAME</code>, and <code>ROAD_SAFETY_ADMIN_EMAIL</code> in your environment. Passwords are stored as one-way hashes.</p></div><span class="badge badge-low">Protected</span></div>
+    <div class="admin-setting"><div><strong>CSV import</strong><p>Imported {{ migration.imported }} unique records; removed {{ migration.duplicates_removed }} exact duplicate rows during import.</p></div><span class="badge badge-low">SQLite</span></div>
+    <div class="admin-setting"><div><strong>Database backup</strong><p>Download a SQLite snapshot to store in a separate, secure location.</p></div><a class="button button-secondary" href="{{ url_for('database_backup') }}">↓ Download backup</a></div>
+    <div class="admin-setting"><div><strong>Map provider</strong><p>Leaflet and OpenStreetMap are active for the location picker, geocoding, and incident map.</p></div><span class="badge badge-low">OpenStreetMap</span></div>
+    <div class="admin-setting"><div><strong>Live traffic sources</strong><p>Configure NTSA or other official account IDs/handles and government RSS feed URLs. X also requires an API bearer token. Configure values in the server environment, never in source code.</p></div><span class="badge badge-moderate">{{ 'Configured' if social_sources_configured else 'Setup required' }}</span></div>
+    <div class="admin-setting"><div><strong>Agency approvals</strong><p>Review agency account requests before enabling agency-wide analytics.</p></div><span class="count-pill">{{ pending_agencies|length }} pending</span></div>
+    {% if pending_agencies %}
+      <div class="pending-agencies">{% for agency in pending_agencies %}<div class="admin-setting"><div><strong>{{ agency.agency_name }}</strong><p>{{ agency.username }} · {{ agency.email }} · {{ agency.created_at }}</p></div><form method="post" action="{{ url_for('approve_agency', user_id=agency.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="button button-primary" type="submit">Approve agency</button></form></div>{% endfor %}</div>
+    {% endif %}
+    <div class="admin-setting"><div><strong>Session security</strong><p>Sign-in is session-based and forms use a security token. Signing out ends the current session.</p></div><form method="post" action="{{ url_for('logout') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="button button-secondary" type="submit">Sign out</button></form></div>
+  </section>
+{% endblock %}

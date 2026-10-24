@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}My profile{% endblock %}
+{% block breadcrumb %}Profile{% endblock %}
+{% block content %}
+  <div class="page-heading"><div><div class="eyebrow">ACCOUNT</div><h1>My profile</h1><p>Your Tusalama account information and access level.</p></div><span class="badge badge-low">{{ profile.role|replace('_', ' ')|title }}</span></div>
+  <section class="panel profile-panel">
+    <div class="profile-avatar">{{ profile.username[:1]|upper }}</div>
+    <div class="profile-fields">
+      <div><small>USERNAME</small><strong>{{ profile.username }}</strong></div>
+      <div><small>EMAIL ADDRESS</small><strong>{{ profile.email }}</strong></div>
+      <div><small>ACCOUNT TYPE</small><strong>{{ profile.role|replace('_', ' ')|title }}</strong></div>
+      {% if profile.agency_name %}<div><small>AGENCY</small><strong>{{ profile.agency_name }}</strong></div>{% endif %}
+      <div><small>ACCOUNT STATUS</small><strong>{{ profile.status|title }}</strong></div>
+      <div><small>MEMBER SINCE</small><strong>{{ profile.created_at }}</strong></div>
+    </div>
+  </section>
+{% endblock %}

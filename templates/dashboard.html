@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}Overview{% endblock %}
+{% block content %}
+  <div class="page-heading">
+    <div><div class="eyebrow">{{ today }}</div><h1>Road safety overview</h1><p>A clear view of incident activity and emerging hotspots.</p></div>
+    <div class="export-actions"><a class="button button-secondary" href="{{ url_for('export_report', format='csv', **filters) }}">CSV</a><a class="button button-secondary" href="{{ url_for('export_report', format='xlsx', **filters) }}">Excel</a><a class="button button-secondary" href="{{ url_for('export_report', format='pdf', **filters) }}">PDF</a></div>
+  </div>
+
+  {% with clear_url=url_for('dashboard') %}{% include "_filters.html" %}{% endwith %}
+
+  <div class="stat-grid">
+    <article class="stat-card"><div class="stat-top"><span class="stat-icon icon-blue">▤</span><span class="stat-label">Total incidents</span></div><strong>{{ total_incidents }}</strong><small>Recorded in your incident register</small></article>
+    <article class="stat-card"><div class="stat-top"><span class="stat-icon icon-orange">⌖</span><span class="stat-label">Fatalities</span></div><strong>{{ total_fatalities }}</strong><small>Total fatalities recorded</small></article>
+    <article class="stat-card"><div class="stat-top"><span class="stat-icon icon-red">⚑</span><span class="stat-label">Repeat hotspots</span></div><strong>{{ hotspot_count }}</strong><small>Locations with 3+ recorded incidents</small></article>
+    <article class="stat-card"><div class="stat-top"><span class="stat-icon icon-green">✓</span><span class="stat-label">Data source</span></div><strong class="stat-word">Connected</strong><small>Local CSV record storage</small></article>
+  </div>
+
+  <div class="section-grid chart-grid">
+    <section class="panel chart-panel"><div class="panel-heading"><div><h2>Incident trend</h2><p>Recorded incidents by month</p></div></div><canvas class="chart-canvas" id="trend-chart" aria-label="Incidents per month" role="img"></canvas></section>
+    <section class="panel chart-panel"><div class="panel-heading"><div><h2>Top hotspot locations</h2><p>Most frequent locations in this view</p></div></div><canvas class="chart-canvas" id="hotspot-chart" aria-label="Incident counts by hotspot" role="img"></canvas></section>
+  </div>
+  <script id="chart-data" type="application/json">{{ chart_data|tojson }}</script>
+
+  <div class="section-grid">
+    <section class="panel">
+      <div class="panel-heading"><div><h2>Incident risk profile</h2><p>Rule-based assessment across all recorded incidents</p></div><a href="{{ url_for('incidents') }}">View all <span>→</span></a></div>
+      <div class="risk-bars">
+        {% set risk_colors = {'Critical':'red', 'High':'orange', 'Moderate':'blue', 'Low':'green'} %}
+        {% for level, count in risk_summary.items() %}
+          <div class="risk-row"><div class="risk-name"><span class="risk-dot {{ risk_colors[level] }}"></span>{{ level }}</div><div class="bar-track"><div class="bar-fill {{ risk_colors[level] }}" style="width: {{ (count / total_incidents * 100) if total_incidents else 0 }}%"></div></div><strong>{{ count }}</strong></div>
+        {% endfor %}
+      </div>
+      <div class="panel-footnote">Scores use the risk rules defined in the existing system.</div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-heading"><div><h2>Frequent locations</h2><p>Ranked by number of recorded incidents</p></div><a href="{{ url_for('analytics') }}">Full analysis <span>→</span></a></div>
+      {% if hotspots %}
+        <div class="location-list">
+          {% for hotspot in hotspots %}
+            <div class="location-row"><div class="location-rank">{{ "%02d"|format(loop.index) }}</div><div class="location-name"><strong>{{ hotspot.location }}</strong><small>{{ hotspot.fatal_incidents }} fatal incident{{ '' if hotspot.fatal_incidents == 1 else 's' }}</small></div><span class="count-pill">{{ hotspot.accident_count }}</span></div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="empty-state compact"><span class="empty-icon">⌖</span><strong>No location data yet</strong><p>Add incidents to see location trends.</p></div>
+      {% endif %}
+    </section>
+  </div>
+
+  <section class="panel recent-panel">
+    <div class="panel-heading"><div><h2>Recent incidents</h2><p>Latest records from your incident register</p></div><a href="{{ url_for('incidents') }}">Browse incidents <span>→</span></a></div>
+    {% if incidents %}
+      <div class="table-wrap"><table><thead><tr><th>REFERENCE</th><th>DATE</th><th>LOCATION</th><th>ROAD</th><th>DETAILS</th><th>FATALITIES</th></tr></thead><tbody>
+      {% for incident in incidents[-6:]|reverse %}
+        <tr><td><a class="table-link" href="{{ url_for('assess_incident', cause_code=incident.cause_code) }}">#{{ incident.cause_code }}</a></td><td>{{ incident.date }}</td><td>{{ incident.place }}</td><td>{{ incident.road }}</td><td class="truncate">{{ incident.accident_info }}</td><td><span class="severity-number {% if incident.fatalities|int > 0 %}has-fatality{% endif %}">{{ incident.fatalities }}</span></td></tr>
+      {% endfor %}
+      </tbody></table></div>
+    {% else %}
+      <div class="empty-state"><span class="empty-icon">▤</span><strong>Your incident register is ready</strong><p>Start by adding your first road incident record.</p><a class="button button-primary" href="{{ url_for('new_incident') }}">＋ Add first incident</a></div>
+    {% endif %}
+  </section>
+  <div class="disclaimer">Showing {{ total_incidents }} of your records after the selected filters. Risk categories are rule-based indicators, not predictions.</div>
+{% endblock %}

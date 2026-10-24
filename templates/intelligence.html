@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Safety intelligence{% endblock %}
+{% block breadcrumb %}Safety intelligence{% endblock %}
+{% block content %}
+  <div class="page-heading"><div><div class="eyebrow">EXPLAINABLE SAFETY INTELLIGENCE</div><h1>Hotspot outlook</h1><p>Historical patterns, transparent projections, and practical actions for Kenya.</p></div><span class="badge badge-moderate">Planning support · not a crash prediction</span></div>
+
+  <section class="panel forecast-panel">
+    <div class="panel-heading"><div><h2>Future hotspot forecast</h2><p>Experimental trend projection for {{ forecast.period or 'the next 3 months' }}</p></div><span class="badge badge-{{ 'low' if forecast.status == 'available' else 'high' }}">{{ 'Limited evidence' if forecast.status != 'available' else 'Trend model' }}</span></div>
+    <div class="forecast-caveat"><strong>{{ forecast.message }}</strong><span>Latest source record: {{ forecast.latest_date or 'not available' }} · {{ forecast.records_used }} records used · {{ forecast.months_observed }} observed months.</span></div>
+    {% if forecast.forecasts %}
+      <div class="table-wrap"><table><thead><tr><th>LOCATION</th><th>COUNTY</th><th>EXPECTED INCIDENTS</th><th>RECORDED FATAL INCIDENTS</th><th>MONTHLY TREND</th><th>CONFIDENCE</th></tr></thead><tbody>
+      {% for item in forecast.forecasts %}
+        <tr><td><strong>{{ item.location }}</strong></td><td>{{ item.county }}</td><td>{{ item.expected_incidents }}</td><td>{{ item.fatal_incidents }}</td><td>{% if item.monthly_trend > 0 %}+{% endif %}{{ item.monthly_trend }}</td><td><span class="badge badge-{{ 'low' if item.confidence == 'Higher' else 'moderate' if item.confidence == 'Moderate' else 'high' }}">{{ item.confidence }}</span></td></tr>
+      {% endfor %}
+      </tbody></table></div>
+    {% else %}
+      <div class="map-empty"><span class="empty-icon">◷</span><strong>No reliable current forecast yet</strong><p>Incident history currently ends at {{ forecast.latest_date or 'an unknown date' }}. Refresh verified incident reporting to enable a forward-looking trend; older hotspots remain visible in analytics.</p></div>
+    {% endif %}
+    <div class="disclaimer">The projection is a simple, explainable linear trend from recent monthly counts. It is not a trained crash-prediction model or probability estimate. Use it only as a planning aid alongside expert judgement.</div>
+  </section>
+
+  <section class="panel recommendations-panel">
+    <div class="panel-heading"><div><h2>Recommended safety actions</h2><p>Practical interventions linked to patterns present in the recorded incident descriptions.</p></div></div>
+    {% if recommendations %}
+      <div class="recommendation-grid">
+        {% for item in recommendations %}
+          <article class="recommendation-card">
+            <div class="recommendation-tag">{{ item.evidence_count }} matching incident{{ '' if item.evidence_count == 1 else 's' }} · {{ item.fatal_count }} fatal</div>
+            <h3>{{ item.title }}</h3>
+            <p>{{ item.action }}</p>
+            {% if item.locations %}<div class="recommendation-locations"><small>Review locations</small>{% for location in item.locations %}<span>{{ location.place }}{% if location.county %}, {{ location.county }}{% endif %} · {{ location.count }}</span>{% endfor %}</div>{% endif %}
+          </article>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="empty-state compact"><strong>More incident descriptions are needed</strong><p>Record incident details to connect recurring patterns with safety actions.</p></div>
+    {% endif %}
+    <div class="disclaimer">Rule-based suggestions are based on recorded text and should be reviewed by a Kenyan road-safety professional before action.</div>
+  </section>
+
+  <section class="panel social-panel">
+    <div class="panel-heading"><div><h2>Live public-safety signals</h2><p>Posts and notices are leads for review, never confirmed incident records.</p></div><span class="badge badge-moderate">{{ 'Sources configured' if source_configuration.x or source_configuration.bluesky or source_configuration.rss else 'Setup required' }}</span></div>
+    <div class="social-setup">
+      <span class="social-icon">◎</span>
+      <div><strong>Official public-source monitor</strong><p>Fetch the latest updates from explicitly configured X accounts, Bluesky handles, and official Kenyan government RSS feeds. Credentials stay server-side.</p><button class="button button-secondary" type="button" id="load-public-signals">Fetch configured sources</button><span id="public-signals-status" class="signals-status" role="status"></span></div>
+    </div>
+    <div id="public-signals-list" class="signals-list" aria-live="polite"></div>
+    <div class="disclaimer">Every item is unverified until reviewed against the incident register by an agency. Social posts are not silently converted into incident records.</div>
+  </section>
+  <script id="public-signals-url" type="application/json">{{ url_for('public_signals')|tojson }}</script>
+{% endblock %}

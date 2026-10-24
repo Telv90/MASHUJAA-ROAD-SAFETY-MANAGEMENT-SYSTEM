@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Create account | Tusalama</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body class="login-page">
+  <main class="login-card signup-card">
+    <a class="brand login-brand" href="{{ url_for('login') }}"><img class="brand-logo" src="{{ url_for('static', filename='tusalama-logo.svg') }}" alt=""><span><strong>TUSALAMA</strong><small>ROAD SAFETY</small></span></a>
+    <div class="eyebrow">CREATE YOUR ACCOUNT</div>
+    <h1>Join Tusalama</h1>
+    <p class="login-intro">Road users can report incidents. Agency access is enabled after administrator verification.</p>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}{% for category, message in messages %}<div class="flash flash-{{ category }}">{{ message }}</div>{% endfor %}{% endif %}
+    {% endwith %}
+    <form method="post" class="login-form" id="signup-form">
+      <label class="field"><span>Username</span><input type="text" name="username" minlength="3" maxlength="40" required autocomplete="username"></label>
+      <label class="field"><span>Email address</span><input type="email" name="email" maxlength="254" required autocomplete="email"></label>
+      <label class="field"><span>Password</span><input type="password" name="password" minlength="12" required autocomplete="new-password"><small class="field-help">Use at least 12 characters.</small></label>
+      <label class="field"><span>Account type</span><select name="role" id="account-role" required><option value="road_user">Road user</option><option value="agency">Road safety agency</option></select></label>
+      <label class="field" id="agency-name-field" hidden><span>Agency name</span><input type="text" name="agency_name" minlength="3" maxlength="120" autocomplete="organization"></label>
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <button type="submit" class="button button-primary login-submit">Create account <span>→</span></button>
+    </form>
+    <p class="signup-prompt">Already registered? <a href="{{ url_for('login') }}">Sign in</a></p>
+  </main>
+  <script>
+    const role = document.getElementById("account-role");
+    const agencyField = document.getElementById("agency-name-field");
+    const agencyInput = agencyField.querySelector("input");
+    function updateAgencyField() {
+      const agencySelected = role.value === "agency";
+      agencyField.hidden = !agencySelected;
+      agencyInput.required = agencySelected;
+    }
+    role.addEventListener("change", updateAgencyField);
+    updateAgencyField();
+  </script>
+</body>
+</html>

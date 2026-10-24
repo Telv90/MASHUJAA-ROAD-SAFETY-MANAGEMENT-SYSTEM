@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Administrator sign in | Tusalama</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body class="login-page">
+  <main class="login-card">
+    <a class="brand login-brand" href="{{ url_for('login') }}"><img class="brand-logo" src="{{ url_for('static', filename='tusalama-logo.svg') }}" alt=""><span><strong>TUSALAMA</strong><small>ROAD SAFETY</small></span></a>
+    <div class="eyebrow">SECURE ACCOUNT ACCESS</div>
+    <h1>Welcome back</h1>
+    <p class="login-intro">Sign in to access your road safety workspace.</p>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}{% for category, message in messages %}<div class="flash flash-{{ category }}">{{ message }}</div>{% endfor %}{% endif %}
+    {% endwith %}
+    {% if admin_setup_available %}
+      <div class="setup-notice"><strong>Set up Tusalama</strong><p>Create the first administrator account to secure and manage this installation. This one-time setup is available only before any accounts exist.</p></div>
+      <p class="signup-prompt"><a href="{{ url_for('setup_admin') }}">Create administrator account →</a></p>
+    {% elif password_configured %}
+      <form method="post" class="login-form">
+        <label class="field"><span>Username or email</span><input type="text" name="username" required autofocus autocomplete="username"></label>
+        <label class="field"><span>Password</span><input type="password" name="password" required autocomplete="current-password"></label>
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <button type="submit" class="button button-primary login-submit">Sign in <span>→</span></button>
+      </form>
+      <p class="signup-prompt">New to Tusalama? <a href="{{ url_for('signup') }}">Create an account</a></p>
+    {% else %}
+      <div class="setup-notice"><strong>Administrator account not configured</strong><p>Set <code>ROAD_SAFETY_ADMIN_PASSWORD</code>, <code>ROAD_SAFETY_ADMIN_USERNAME</code>, and <code>ROAD_SAFETY_ADMIN_EMAIL</code> in the environment, then restart the app. See README for setup details.</p></div>
+    {% endif %}
+    <small class="login-footnote">Improving road safety using technology and artificial intelligence</small>
+    <small class="login-author">Telvin Gachithi Kariithi</small>
+  </main>
+</body>
+</html>

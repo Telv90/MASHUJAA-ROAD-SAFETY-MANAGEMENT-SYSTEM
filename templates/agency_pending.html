@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}Agency verification{% endblock %}
+{% block breadcrumb %}Agency verification{% endblock %}
+{% block content %}
+  <section class="panel pending-panel">
+    <span class="pending-icon">◷</span>
+    <div class="eyebrow">AGENCY ACCOUNT</div>
+    <h1>Verification in progress</h1>
+    <p>Your agency account is pending administrator approval. Agency analytics and incident tools will become available after verification.</p>
+    <a class="button button-secondary" href="{{ url_for('profile') }}">View profile</a>
+  </section>
+{% endblock %}

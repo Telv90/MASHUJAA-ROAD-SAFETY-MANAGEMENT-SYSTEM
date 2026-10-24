@@ -1,155 +1,181 @@
-# MASHUJAA ROAD SAFETY MANAGEMENT SYSTEM
-## OVERVIEW
-MASHUJAA Is a python-based road safety management syste for recording accidents,assessing risk and identifying accident hotspots.
-## PROBLEM STATEMENT
-Road accidents are one of the major factors for loss of life,injuries and damage of property in Kenya.Having a management system that is able to organise and clean road accident data reports is useful for identifying recurring risk factors for analysis and clear decision making process.
-MASHUJAA aims to provide a simple system for managing accident records and produce rule-based summaries that can support decision making processes.
-## OBJECTIVES
-- Record and manage road accident information.
-- Validate incident data before storing it.
-- Calculate and classify incident risk using predefined rules.
-- Map out locations with recurring accidents
-- Generate reports on total accidents,injuries,severities and risk categories.
-## FEATURES
-1. Accident registration and record management.
-2. Input validation and Error Handling.
-3. Rule-based risk assessement.
-4. Accident hotspot analysis.
-5. CSV data persistence.
-6. Report Generation.
-7. Menu-driven interface.
-## TECHNOLGIES USED
-- Python: Application development.
-- CSV: data storage and exchange.
-- Python standard libraries: File handling,date preprocessing,data analysis
-## PROJECT STRUCTURE
+# Tusalama Road Safety Management System
 
-MASHUJAA/
-│
-├── main.py
-├── README.md
-├── requirements.md
-│
-├── models/
-│   ├── __init__.py
-│   ├── incident.py
-│   └── road.py
-│
-├── services/
-│   ├── __init__.py
-│   ├── incident_service.py
-│   ├── risk_assessment.py
-│   └── hotspot_analysis.py
-│
-├── storage/
-│   ├── __init__.py
-│   └── file_manager.py
-│
-├── validation/
-│   ├── __init__.py
-│   └── validators.py
-│
-├── data/
-│   └── incidents.csv
-│
-├── reports/
-│   └── .gitkeep
-│
-└── tests/
-    ├── __init__.py
-    ├── test_incident.py
-    ├── test_risk_assessment.py
-    ├── test_validation.py
-    └── test_storage.py
-## SYSTEM FLOWCHART
-```mermaid
-flowchart TD
-    A([Start]) --> B[Load Existing Accident Records]
-    B --> C{Data Loaded Successfully?}
+Tusalama is a Kenya-focused road-safety application for managing incident
+reports, exploring hotspots, and supporting evidence-informed prevention.
+It includes a responsive Flask web dashboard and retains the original
+menu-driven Python application.
 
-    C -- Yes --> D[Display Main Menu]
-    C -- No --> E[Handle File Error or Initialise Empty Records]
-    E --> D
+## Features
 
-    D --> F{Select an Option}
+- Register, view, edit, and delete road incident reports.
+- Assess incident risk with transparent, rule-based scoring and recommendations.
+- Explore hotspot and trend charts with county, road, date, and severity filters.
+- View incidents on a Leaflet/OpenStreetMap map; search Kenyan place names or
+  select a point to populate coordinates.
+- Forecast hotspot trends only when recent data is sufficient, and present
+  evidence-linked suggestions for professional review.
+- Optionally display configured public safety signals from Bluesky, the official
+  X API, and approved Kenyan government RSS domains. Signals are unverified
+  leads and are not automatically saved as incidents.
+- Export reports as CSV, Excel, or PDF.
+- Sign up as a road user or road-safety agency. Agencies need administrator
+  approval; road users can access and manage their own reports.
+- Create the first administrator account using a one-time login-page setup, or
+  provision it from environment variables.
+- Store accounts and incidents in SQLite and download database snapshots from
+  the administrator panel.
+- Use a Kenyan flag-inspired visual theme and mobile-friendly interface.
 
-    F -- "1. Register Accident" --> G[Collect Accident Details]
-    G --> H[Validate Input]
-    H --> I{Input Valid and ID Unique?}
-    I -- No --> J[Display Validation Error]
-    J --> G
-    I -- Yes --> K[Create Incident Object]
-    K --> L[Save Accident Records]
-    L --> D
+## Requirements
 
-    F -- "2. View Incidents" --> M[Retrieve and Display Records]
-    M --> D
+- Python 3.10 or later.
+- Windows PowerShell, Command Prompt, or another terminal.
+- Internet access for OpenStreetMap tiles, location lookup, and optional public
+  signal sources.
 
-    F -- "3. Search Incident" --> N[Enter Incident ID]
-    N --> O[Search Stored Records]
-    O --> P[Display Search Result]
-    P --> D
+## Install and run the web app (Windows PowerShell)
 
-    F -- "4. Update Incident" --> Q[Select Incident and Edit Details]
-    Q --> R[Validate Updated Data]
-    R --> S{Updated Data Valid?}
-    S -- No --> T[Display Error]
-    T --> Q
-    S -- Yes --> U[Update Record and Save]
-    U --> D
+From the project directory:
 
-    F -- "5. Delete Incident" --> V[Select Incident]
-    V --> W{Confirm Deletion?}
-    W -- No --> D
-    W -- Yes --> X[Delete Record and Save]
-    X --> D
-
-    F -- "6. Assess Road Risk" --> Y[Select Incident]
-    Y --> Z[Calculate Rule-Based Risk Score]
-    Z --> AA[Classify Risk Level]
-    AA --> AB[Recommend Preventive Measures]
-    AB --> AC[Display Risk Assessment]
-    AC --> D
-
-    F -- "7. Analyse Hotspots" --> AD[Group Records by Location]
-    AD --> AE[Count and Rank Accidents]
-    AE --> AF[Identify Repeated or Severe Incidents]
-    AF --> AG[Display Hotspot Analysis]
-    AG --> D
-
-    F -- "8. Generate Report" --> AH[Summarise Accident Records]
-    AH --> AI[Calculate Statistics]
-    AI --> AJ[Display Report]
-    AJ --> AK{Export Report?}
-    AK -- Yes --> AL[Write Report to File]
-    AK -- No --> D
-    AL --> D
-
-    F -- "9. Exit" --> AM[Save Outstanding Changes]
-    AM --> AN([End])
-
-    F -- Invalid Option --> AO[Display Menu Error]
-    AO --> D
+```powershell
+Set-Location -LiteralPath 'C:\path\to\ROAD SAFETY MANAGEMENT SYSTEM'
+python -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
 ```
 
-## PREREQUISITES
-- Python 3.10 or other version
-- Visual studio code or Pycharm
-- Command prompt
-## INSTALLATION AND USAGE
-1. Obtain the project files.
-2. Open the project folder in your preffered code editor.
-3. Check it's the required version.
-4. Use main.py to run the program.
-## TESTING
-The program should be tested with valid and invalid inputs,duplicate incident identifiers,missing data files and application restarts to verify data.
-## LIMITATIONS
-1. The initial version uses manually entered data and sample data.
-2. Risk classifications do not establish an actual probability of a road accident.
-3. The risk scores are based on predefined rules not a validated predictive model.
-## FUTURE IMPROVEMENTS
-1. Integrate  verified accident datasets.
-2. Introduce geographical mapping of accident hotspots.
-3. Develop a web-based interface.
-## LICENSE
-Not yet applicable
+Set a persistent Flask session-signing key. Keep it private and reuse it when
+restarting the app; changing it signs out existing sessions:
+
+```powershell
+$key = [Environment]::GetEnvironmentVariable("FLASK_SECRET_KEY", "User")
+if (-not $key) {
+    $key = .\.venv\Scripts\python.exe -c "import secrets; print(secrets.token_urlsafe(48))"
+    [Environment]::SetEnvironmentVariable("FLASK_SECRET_KEY", $key, "User")
+}
+$env:FLASK_SECRET_KEY = $key
+```
+
+### Create the administrator account
+
+For an empty database, leave `ROAD_SAFETY_ADMIN_PASSWORD` unset and start the
+app. Open [http://127.0.0.1:5000/login](http://127.0.0.1:5000/login), select
+**Create administrator account**, and enter a username, email, and password of
+at least 12 characters. This one-time setup is disabled after the first account
+is created. Public signup does not allow administrator accounts.
+
+Alternatively, configure the administrator in PowerShell **before** starting
+the app. These variables apply only to processes started from that terminal:
+
+```powershell
+$env:ROAD_SAFETY_ADMIN_USERNAME = "admin"
+$env:ROAD_SAFETY_ADMIN_EMAIL = "your-admin-email@example.com"
+$env:ROAD_SAFETY_ADMIN_PASSWORD = "replace-with-a-new-unique-password"
+```
+
+Keep the password private and do not commit it. At startup, configured admin
+credentials create or update the account in the selected database. If the
+environment password is set, the first-admin setup link is not shown.
+
+Start the dashboard in the same terminal used for configuration:
+
+```powershell
+.\.venv\Scripts\python.exe app.py
+```
+
+Open [http://127.0.0.1:5000](http://127.0.0.1:5000). To stop the server, focus
+its terminal and press `Ctrl+C`. If port 5000 is occupied, stop the existing
+Tusalama server before starting another instance.
+
+### Database and incident data
+
+By default, Tusalama uses `data/tusalama.sqlite3`. On first startup, it imports
+the legacy `incidents.csv` once, retaining unique full records; subsequent
+starts use SQLite and do not re-import CSV changes. Existing databases are
+preserved. Set `TUSALAMA_DATABASE_PATH` before starting the app to use another
+database file:
+
+```powershell
+$env:TUSALAMA_DATABASE_PATH = 'C:\secure-data\tusalama.sqlite3'
+```
+
+Download database snapshots from the administrator panel and keep backups in a
+separate, access-controlled location. SQLite is local storage, not cloud
+hosting; deploy with a managed database and suitable backup process if shared
+remote storage is required.
+
+### Optional public safety signal sources
+
+Sources are disabled unless configured. Use environment variables in the same
+terminal that starts the app:
+
+```powershell
+$env:TUSALAMA_BSKY_HANDLES = "official-handle.bsky.social"
+$env:TUSALAMA_X_USER_IDS = "verified-account-id"
+$env:TUSALAMA_X_BEARER_TOKEN = "your-private-api-token"
+$env:TUSALAMA_RSS_FEEDS = "https://agency.go.ke/feed.xml"
+```
+
+Separate multiple Bluesky handles or X user IDs with commas, and separate RSS
+feed URLs with semicolons. RSS endpoints must use HTTPS and approved Kenyan
+government domains. Verify source ownership and comply with source terms before
+enabling feeds. Treat returned posts as unverified reports; confirm them before
+creating incident records. Do not commit API tokens or other credentials.
+
+## Roles and access
+
+| Role | Access |
+| --- | --- |
+| Administrator | Full incident, analytics, intelligence, account approval, and database-backup access. |
+| Road safety agency | Incident and hotspot features after administrator approval; agency reports are scoped to that agency. |
+| Road user | Submit, view, and manage their own reports and access their profile. |
+
+Passwords are stored as hashes. Use HTTPS and a production WSGI server for
+network deployments. Do not expose Flask's built-in development server to the
+public internet. Set `FLASK_COOKIE_SECURE=1` when serving over HTTPS.
+
+## Forecasting and maps
+
+Hotspot forecasts use explainable historical trends, not a trained machine
+learning model or a crash-probability guarantee. Forecasts are withheld when
+data is stale or insufficient. Recommendations are prompts for qualified road
+safety professionals, not automatic instructions.
+
+Maps use Leaflet and OpenStreetMap. Location lookup uses the Nominatim service
+and requires an internet connection. Google Maps integration is not currently
+enabled.
+
+## Tests
+
+Install the dependencies as above, then run:
+
+```powershell
+.\.venv\Scripts\python.exe -m unittest discover -v
+```
+
+## Project layout
+
+```text
+app.py                         Flask application and web routes
+main.py                        Original menu-driven application
+Models/                        Incident and road models
+Services/                      Incident, risk, hotspot, forecast, and signal logic
+Validation/                    Input validation
+storage/                       CSV compatibility and SQLite persistence
+templates/                     Dashboard, account, and report pages
+static/                        Styles, scripts, and logo assets
+tests/                         Web app and forecasting tests
+incidents.csv                  Legacy CSV import source
+requirements.txt               Web app dependencies
+```
+
+The original command-line application can be run with:
+
+```powershell
+.\.venv\Scripts\python.exe main.py
+```
+
+## Maintainer
+
+Telvin Gachithi Kariithi
+
+Improving road safety using technology and artificial intelligence.

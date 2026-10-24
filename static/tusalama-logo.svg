@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 80" role="img" aria-labelledby="title">
+  <title id="title">Tusalama road and vehicle with the Kenyan flag on the horizon</title>
+  <rect width="96" height="80" rx="16" fill="#f2f5f1"/>
+  <path d="M8 44h80v16H8z" fill="#dce9df"/>
+  <path d="M12 48h72" fill="none" stroke="#006b3f" stroke-width="2"/>
+  <path d="M17 49V17" stroke="#252525" stroke-width="2"/>
+  <path d="M19 18h30v18H19z" fill="#fff" stroke="#252525" stroke-width=".8"/>
+  <path d="M19.5 18.5h29v4.8h-29z" fill="#171717"/>
+  <path d="M19.5 24.2h29v5.1h-29z" fill="#b5121b"/>
+  <path d="M19.5 30.1h29v5.4h-29z" fill="#006b3f"/>
+  <path d="M19 23.4h30v.9H19zm0 5.8h30v.9H19z" fill="#fff"/>
+  <path d="M48 42 8 78h80L54 42z" fill="#242424"/>
+  <path d="m49 45-2 9h5l-1-9zm-4 17-3 11h10l-3-11z" fill="#fff"/>
+  <path d="m35 59 9-5h15l10 5 3 10H32z" fill="#b5121b" stroke="#171717" stroke-width="1.5" stroke-linejoin="round"/>
+  <path d="m43 56 3-5h9l5 5z" fill="#fff" stroke="#171717" stroke-width="1.2" stroke-linejoin="round"/>
+  <path d="M47 52h4v3h-6z" fill="#bbd6c7"/>
+  <circle cx="40" cy="68" r="3.5" fill="#171717"/>
+  <circle cx="61" cy="68" r="3.5" fill="#171717"/>
+  <path d="M37 76h22" stroke="#006b3f" stroke-width="2.5" stroke-linecap="round"/>
+</svg>

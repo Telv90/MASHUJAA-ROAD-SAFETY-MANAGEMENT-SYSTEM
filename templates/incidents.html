@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Incidents{% endblock %}
+{% block breadcrumb %}Incidents{% endblock %}
+{% block content %}
+  <div class="page-heading">
+    <div><div class="eyebrow">INCIDENT REGISTER</div><h1>All incidents</h1><p>Search, review, update, or assess a recorded road incident.</p></div>
+    <a class="button button-primary" href="{{ url_for('new_incident') }}">＋ <span>New incident</span></a>
+  </div>
+  <section class="panel">
+    {% with clear_url=url_for('incidents') %}{% include "_filters.html" %}{% endwith %}
+    <form class="search-row" method="get" action="{{ url_for('incidents') }}"><label class="search-box"><span>⌕</span><input type="search" name="q" value="{{ query }}" placeholder="Search reference, road, location, county..."></label><input type="hidden" name="county" value="{{ filters.county }}"><input type="hidden" name="road" value="{{ filters.road }}"><input type="hidden" name="start_date" value="{{ filters.start_date }}"><input type="hidden" name="end_date" value="{{ filters.end_date }}"><input type="hidden" name="severity" value="{{ filters.severity }}"><button class="button button-secondary" type="submit">Search</button>{% if query %}<a class="clear-search" href="{{ url_for('incidents', county=filters.county, road=filters.road, start_date=filters.start_date, end_date=filters.end_date, severity=filters.severity) }}">Clear</a>{% endif %}<span class="result-count">Showing {{ (page - 1) * page_size + 1 if total_records else 0 }}–{{ (page - 1) * page_size + incidents|length }} of {{ total_records }}</span></form>
+    {% if incidents %}
+      <div class="table-wrap"><table><thead><tr><th>REFERENCE</th><th>DATE &amp; TIME</th><th>LOCATION</th><th>ROAD</th><th>ACCIDENT DETAILS</th><th>FATALITIES</th><th>RISK</th><th></th></tr></thead><tbody>
+      {% for incident in incidents %}
+        {% set risk = assessor.calculate_risk_score(incident) %}
+        {% set level = assessor.get_risk_level(risk) %}
+        <tr><td><a class="table-link" href="{{ url_for('assess_incident', cause_code=incident.cause_code) }}">#{{ incident.cause_code }}</a></td><td>{{ incident.date }}<small class="cell-sub">{{ incident.time }}</small></td><td>{{ incident.place }}<small class="cell-sub">{{ incident.county }}</small></td><td>{{ incident.road }}</td><td class="truncate">{{ incident.accident_info }}</td><td><span class="severity-number {% if incident.fatalities|int > 0 %}has-fatality{% endif %}">{{ incident.fatalities }}</span></td><td><span class="badge badge-{{ level|lower }}">{{ level }}</span></td><td><div class="row-actions"><a href="{{ url_for('edit_incident', cause_code=incident.cause_code) }}">Edit</a><form method="post" action="{{ url_for('delete_incident', cause_code=incident.cause_code) }}" onsubmit="return confirm('Delete incident #{{ incident.cause_code }}? This cannot be undone.');"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="link-danger" type="submit">Delete</button></form></div></td></tr>
+      {% endfor %}
+      </tbody></table></div>
+      {% if page_count > 1 %}
+        <nav class="pagination" aria-label="Incident pages">
+          {% if page > 1 %}<a href="{{ url_for('incidents', q=query, county=filters.county, road=filters.road, start_date=filters.start_date, end_date=filters.end_date, severity=filters.severity, page=page - 1) }}">← Previous</a>{% else %}<span class="disabled">← Previous</span>{% endif %}
+          <span>Page {{ page }} of {{ page_count }}</span>
+          {% if page < page_count %}<a href="{{ url_for('incidents', q=query, county=filters.county, road=filters.road, start_date=filters.start_date, end_date=filters.end_date, severity=filters.severity, page=page + 1) }}">Next →</a>{% else %}<span class="disabled">Next →</span>{% endif %}
+        </nav>
+      {% endif %}
+    {% else %}
+      <div class="empty-state"><span class="empty-icon">⌕</span><strong>{% if query %}No matching incidents{% else %}No incidents recorded{% endif %}</strong><p>{% if query %}Try a different search term.{% else %}Add an incident to begin building your register.{% endif %}</p>{% if not query %}<a class="button button-primary" href="{{ url_for('new_incident') }}">＋ Add incident</a>{% endif %}</div>
+    {% endif %}
+  </section>
+{% endblock %}

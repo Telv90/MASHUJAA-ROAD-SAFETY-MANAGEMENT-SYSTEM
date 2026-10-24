@@ -1,0 +1,11 @@
+<form class="filter-panel" method="get">
+  <div class="filter-heading"><div><h2>Filter incidents</h2><p>Apply filters to the dashboard and analysis.</p></div><a href="{{ clear_url }}">Clear filters</a></div>
+  <div class="filter-controls">
+    <label class="filter-field"><span>County</span><select name="county"><option value="">All counties</option>{% for county in counties %}<option value="{{ county }}" {% if filters.county == county %}selected{% endif %}>{{ county }}</option>{% endfor %}</select></label>
+    <label class="filter-field"><span>Road</span><select name="road"><option value="">All roads</option>{% for road in roads %}<option value="{{ road }}" {% if filters.road == road %}selected{% endif %}>{{ road }}</option>{% endfor %}</select></label>
+    <label class="filter-field"><span>From date</span><input type="date" name="start_date" value="{{ filters.start_date }}"></label>
+    <label class="filter-field"><span>To date</span><input type="date" name="end_date" value="{{ filters.end_date }}"></label>
+    <label class="filter-field"><span>Risk severity</span><select name="severity"><option value="">All risk levels</option>{% for level in ('Critical', 'High', 'Moderate', 'Low') %}<option value="{{ level }}" {% if filters.severity == level %}selected{% endif %}>{{ level }}</option>{% endfor %}</select></label>
+    <button class="button button-primary" type="submit">Apply filters</button>
+  </div>
+</form>

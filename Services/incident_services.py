@@ -4,17 +4,18 @@ class IncidentService:
         """Store the FileManager object."""
         self.file_manager = file_manager
 
-    def register_incident(self, incident):
+    def register_incident(self, incident, reporter_id=None):
         """Validate and register a new incident."""
 
         incidents = self.file_manager.load_incidents()
 
-        # Check whether the exact record already exists
-        if incident in incidents:
+        if any(
+            existing["cause_code"] == str(incident["cause_code"])
+            for existing in incidents
+        ):
             return "Incident already recorded!"
 
-        # Save the new incident
-        self.file_manager.add_incident(
+        if not self.file_manager.add_incident(
             incident["time"],
             incident["date"],
             incident["county"],
@@ -24,18 +25,34 @@ class IncidentService:
             incident["accident_info"],
             incident["fatalities"],
             incident["victim"],
-            incident["cause_code"]
-        )
+            incident["cause_code"],
+            incident.get("latitude", ""),
+            incident.get("longitude", ""),
+            reporter_id=reporter_id,
+        ):
+            return "Incident already recorded!"
 
         return "Incident registered successfully!"
 
-    def view_all_incidents(self):
+    def view_all_incidents(self, owner_user_id=None, agency_name=None):
         """Retrieve all stored incidents."""
-        incidents = self.file_manager.load_incidents()
+        if agency_name:
+            incidents = self.file_manager.load_incidents(
+                agency_name=agency_name
+            )
+        elif owner_user_id is None:
+            incidents = self.file_manager.load_incidents()
+        else:
+            incidents = self.file_manager.load_incidents(owner_user_id)
         return incidents
 
-    def search_incident(self, cause_code):
+    def search_incident(self, cause_code, owner_user_id=None, agency_name=None):
         """Find incidents using a cause code."""
+
+        if hasattr(self.file_manager, "search_incident"):
+            return self.file_manager.search_incident(
+                cause_code, owner_user_id, agency_name
+            )
 
         incidents = self.file_manager.load_incidents()
 
@@ -45,8 +62,19 @@ class IncidentService:
 
         return None
 
-    def update_incident(self, cause_code, updates):
+    def update_incident(
+        self, cause_code, updates, owner_user_id=None, agency_name=None,
+    ):
         """Update selected details of an incident."""
+
+        if hasattr(self.file_manager, "update_incident"):
+            updated = self.file_manager.update_incident(
+                cause_code, updates, owner_user_id, agency_name
+            )
+            return (
+                "Record updated successfully!"
+                if updated else "Incident not found!"
+            )
 
         incidents = self.file_manager.load_incidents()
 
@@ -62,8 +90,19 @@ class IncidentService:
 
         return "Incident not found!"
 
-    def delete_incident(self, cause_code):
+    def delete_incident(
+        self, cause_code, owner_user_id=None, agency_name=None,
+    ):
         """Delete an incident using its cause code."""
+
+        if hasattr(self.file_manager, "delete_incident"):
+            deleted = self.file_manager.delete_incident(
+                cause_code, owner_user_id, agency_name
+            )
+            return (
+                "Incident deleted successfully!"
+                if deleted else "Incident not found!"
+            )
 
         incidents = self.file_manager.load_incidents()
         updated_incidents = []

@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}Risk assessment{% endblock %}
+{% block breadcrumb %}<a href="{{ url_for('incidents') }}">Incidents</a> <span>/</span> Risk assessment{% endblock %}
+{% block content %}
+  <div class="page-heading"><div><div class="eyebrow">RULE-BASED ASSESSMENT · #{{ incident.cause_code }}</div><h1>Incident risk assessment</h1><p>{{ incident.place }}, {{ incident.county }} · {{ incident.date }}</p></div><a class="button button-secondary" href="{{ url_for('edit_incident', cause_code=incident.cause_code) }}">Edit incident</a></div>
+  <div class="risk-detail-grid">
+    <section class="panel score-panel"><div class="eyebrow">OVERALL RISK</div><div class="score-number">{{ score }}</div><span class="badge badge-{{ level|lower }}">{{ level }} risk</span><p>Calculated using the system's existing accident-type and fatalities rules.</p></section>
+    <section class="panel"><div class="panel-heading"><div><h2>Score breakdown</h2><p>Contributions from configured risk factors</p></div></div><div class="breakdown-row"><div><strong>Accident type</strong><small>{{ incident.accident_info }}</small></div><strong>+{{ accident_score }}</strong></div><div class="breakdown-row"><div><strong>Fatalities</strong><small>{{ incident.fatalities }} recorded</small></div><strong>+{{ fatality_score }}</strong></div><div class="breakdown-total"><span>Total risk score</span><strong>{{ score }}</strong></div></section>
+  </div>
+  <section class="panel detail-panel"><div class="panel-heading"><div><h2>Incident details</h2><p>Record #{{ incident.cause_code }}</p></div></div><div class="detail-grid"><div><small>ROAD</small><strong>{{ incident.road }}</strong></div><div><small>LOCATION</small><strong>{{ incident.place }}</strong></div><div><small>COUNTY</small><strong>{{ incident.county }}</strong></div><div><small>ROAD USER</small><strong>{{ incident.victim }}</strong></div><div><small>TIME</small><strong>{{ incident.time }}</strong></div><div><small>NEAREST BASE</small><strong>{{ incident.base }}</strong></div></div></section>
+  <div class="disclaimer">This assessment applies predefined rules to recorded data. It does not estimate the probability of a future crash.</div>
+{% endblock %}

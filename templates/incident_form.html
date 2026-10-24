@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Edit incident' if editing else 'New incident' }}{% endblock %}
+{% block breadcrumb %}<a href="{{ url_for('incidents') }}">Incidents</a> <span>/</span> {{ 'Edit record' if editing else 'New record' }}{% endblock %}
+{% block head_extra %}<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">{% endblock %}
+{% block content %}
+  <div class="page-heading"><div><div class="eyebrow">INCIDENT REGISTER</div><h1>{{ 'Update incident' if editing else 'Record an incident' }}</h1><p>Enter the details below. Required fields are marked with an asterisk.</p></div></div>
+  <form class="panel form-panel" method="post">
+    <div class="form-section-heading"><span class="section-number">01</span><div><h2>Incident information</h2><p>Identification, time, and location details</p></div></div>
+    <div class="form-grid">
+      {% for field, label in fields %}
+        <label class="field {% if field == 'accident_info' %}field-wide{% endif %}">
+          <span>{{ label }} <b>*</b></span>
+          {% if field == 'date' %}
+            <input type="date" name="{{ field }}" value="{{ incident.get(field, '') }}" required>
+          {% elif field == 'time' %}
+            <input type="time" name="{{ field }}" value="{{ incident.get(field, '') }}" required>
+          {% elif field == 'accident_info' %}
+            <textarea name="{{ field }}" rows="3" required placeholder="Briefly describe what happened">{{ incident.get(field, '') }}</textarea>
+          {% else %}
+            <input type="text" name="{{ field }}" value="{{ incident.get(field, '') }}" required>
+          {% endif %}
+        </label>
+      {% endfor %}
+      <label class="field"><span>Fatalities <b>*</b></span><input type="number" min="0" step="1" name="fatalities" value="{{ incident.get('fatalities', '0') }}" required></label>
+      <div class="form-section-heading form-section-wide"><span class="section-number">02</span><div><h2>Map location</h2><p>Optional GPS coordinates for precise hotspot mapping</p></div></div>
+      <p class="field-hint form-section-wide">Search a Kenyan place or click the map to place a pin. The selected coordinates are saved with the incident.</p>
+      <div class="location-search form-section-wide"><input type="search" id="map-location-search" placeholder="Search place, road, or county in Kenya"><button class="button button-secondary" type="button" id="find-location">Find on map</button><span id="location-search-status" role="status"></span></div>
+      <div id="coordinate-picker" class="coordinate-picker form-section-wide" aria-label="Choose incident coordinates on the map"></div>
+      <label class="field"><span>Latitude</span><input id="latitude" type="number" name="latitude" min="-90" max="90" step="any" value="{{ incident.get('latitude', '') }}" placeholder="-1.2864"></label>
+      <label class="field"><span>Longitude</span><input id="longitude" type="number" name="longitude" min="-180" max="180" step="any" value="{{ incident.get('longitude', '') }}" placeholder="36.8172"></label>
+    </div>
+    <div class="form-actions"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><a class="button button-secondary" href="{{ url_for('incidents') }}">Cancel</a><button class="button button-primary" type="submit">{{ 'Save changes' if editing else 'Save incident' }} <span>→</span></button></div>
+  </form>
+  {% block scripts_extra %}<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>{% endblock %}
+{% endblock %}

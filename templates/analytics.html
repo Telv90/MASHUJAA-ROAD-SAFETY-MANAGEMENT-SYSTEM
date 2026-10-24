@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Hotspot analysis{% endblock %}
+{% block breadcrumb %}Hotspot analysis{% endblock %}
+{% block head_extra %}{% if map_points %}<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">{% endif %}{% endblock %}
+{% block scripts_extra %}{% if map_points %}<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>{% endif %}{% endblock %}
+{% block content %}
+  <div class="page-heading"><div><div class="eyebrow">BLACKSPOT ANALYSIS</div><h1>Hotspots &amp; patterns</h1><p>Locations and roads ranked by the incidents in your register.</p></div><div class="export-actions"><a class="button button-secondary" href="{{ url_for('export_report', format='csv', **filters) }}">CSV</a><a class="button button-secondary" href="{{ url_for('export_report', format='xlsx', **filters) }}">Excel</a><a class="button button-secondary" href="{{ url_for('export_report', format='pdf', **filters) }}">PDF</a></div></div>
+  {% with clear_url=url_for('analytics') %}{% include "_filters.html" %}{% endwith %}
+  <div class="section-grid chart-grid">
+    <section class="panel chart-panel"><div class="panel-heading"><div><h2>Incident trend</h2><p>Recorded incidents by month</p></div></div><canvas class="chart-canvas" id="trend-chart" aria-label="Incidents per month" role="img"></canvas></section>
+    <section class="panel chart-panel"><div class="panel-heading"><div><h2>Top hotspot locations</h2><p>Most frequent locations in this view</p></div></div><canvas class="chart-canvas" id="hotspot-chart" aria-label="Incident counts by hotspot" role="img"></canvas></section>
+  </div>
+  <section class="panel map-panel">
+    <div class="panel-heading"><div><h2>Incident location map</h2><p>Exact markers are shown only for records with saved GPS coordinates.</p></div><span class="count-pill">{{ map_points|length }} mapped incidents</span></div>
+    {% if map_points %}
+      <div id="hotspot-map" class="hotspot-map" aria-label="Map of geolocated road incidents"></div>
+        <script id="map-data" type="application/json">{{ map_points|tojson }}</script>
+      <div class="map-attribution-note">Map tiles © OpenStreetMap contributors. Incident coordinates are sent only to your browser; they are not used to request map tiles.</div>
+    {% else %}
+      <div class="map-empty"><span class="empty-icon">⌖</span><strong>No GPS coordinates recorded</strong><p>Add latitude and longitude to incident records to plot precise hotspot markers.</p><span>Existing records remain unmapped until coordinates are added.</span></div>
+    {% endif %}
+  </section>
+  <div class="section-grid">
+    <section class="panel"><div class="panel-heading"><div><h2>Locations</h2><p>Sorted by recorded accident frequency</p></div></div>
+      {% if hotspots %}<div class="location-list">{% for item in hotspots %}<div class="location-row"><div class="location-rank">{{ "%02d"|format(loop.index) }}</div><div class="location-name"><strong>{{ item.location }}</strong><small>{{ item.fatal_incidents }} fatal incident{{ '' if item.fatal_incidents == 1 else 's' }}</small></div><span class="count-pill">{{ item.accident_count }} incidents</span></div>{% endfor %}</div>{% else %}<div class="empty-state compact"><strong>No location data yet</strong><p>Incident locations will appear here.</p></div>{% endif %}
+    </section>
+    <section class="panel"><div class="panel-heading"><div><h2>Roads</h2><p>Accidents recorded on each road</p></div></div>
+      {% if road_counts %}<div class="location-list">{% for road, count in road_counts %}<div class="location-row"><div class="location-rank">{{ "%02d"|format(loop.index) }}</div><div class="location-name"><strong>{{ road }}</strong></div><span class="count-pill">{{ count }} incidents</span></div>{% endfor %}</div>{% else %}<div class="empty-state compact"><strong>No road data yet</strong><p>Incident roads will appear here.</p></div>{% endif %}
+    </section>
+  </div>
+  <div class="section-grid analytics-lower">
+    <section class="panel"><div class="panel-heading"><div><h2>Accident descriptions</h2><p>Most common recorded accident details</p></div></div>{% if accident_types %}<div class="type-list">{% for name, count in accident_types %}<div class="type-row"><span>{{ name }}</span><strong>{{ count }}</strong></div>{% endfor %}</div>{% else %}<div class="empty-state compact"><strong>No incident data yet</strong></div>{% endif %}</section>
+    <section class="panel"><div class="panel-heading"><div><h2>Risk profile</h2><p>Rule-based scores across all records</p></div></div><div class="risk-bars">{% set risk_colors = {'Critical':'red', 'High':'orange', 'Moderate':'blue', 'Low':'green'} %}{% for level, count in risk_summary.items() %}<div class="risk-row"><div class="risk-name"><span class="risk-dot {{ risk_colors[level] }}"></span>{{ level }}</div><div class="bar-track"><div class="bar-fill {{ risk_colors[level] }}" style="width: {{ (count / incidents|length * 100) if incidents else 0 }}%"></div></div><strong>{{ count }}</strong></div>{% endfor %}</div></section>
+  </div>
+  <div class="disclaimer">Location rankings reflect the available records only; they are not adjusted for traffic volume or exposure. Risk categories are rule-based indicators.</div>
+{% endblock %}

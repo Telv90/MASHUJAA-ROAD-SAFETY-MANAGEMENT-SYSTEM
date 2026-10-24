@@ -232,7 +232,7 @@ def generate_hotspot_report():
 
     for hotspot in report:
         print("Location:", hotspot["location"])
-        print(f"Accident count: {hotspot["accident_count"]}")
+        print(f"Accident count: {hotspot['accident_count']}")
         print("-"*20)
 
 

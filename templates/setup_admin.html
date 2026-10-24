@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Set up administrator | Tusalama</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body class="login-page">
+  <main class="login-card signup-card">
+    <a class="brand login-brand" href="{{ url_for('login') }}"><img class="brand-logo" src="{{ url_for('static', filename='tusalama-logo.svg') }}" alt=""><span><strong>TUSALAMA</strong><small>ROAD SAFETY</small></span></a>
+    <div class="eyebrow">ONE-TIME INITIAL SETUP</div>
+    <h1>Create administrator</h1>
+    <p class="login-intro">Set up the first account for this Tusalama installation. It will have full administrator access.</p>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}{% for category, message in messages %}<div class="flash flash-{{ category }}">{{ message }}</div>{% endfor %}{% endif %}
+    {% endwith %}
+    <form method="post" class="login-form">
+      <label class="field"><span>Username</span><input type="text" name="username" minlength="3" maxlength="40" required autocomplete="username" autofocus></label>
+      <label class="field"><span>Email address</span><input type="email" name="email" maxlength="254" required autocomplete="email"></label>
+      <label class="field"><span>Password</span><input type="password" name="password" minlength="12" required autocomplete="new-password"><small class="field-help">Use at least 12 characters.</small></label>
+      <label class="field"><span>Confirm password</span><input type="password" name="confirm_password" minlength="12" required autocomplete="new-password"></label>
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <button type="submit" class="button button-primary login-submit">Create administrator <span>→</span></button>
+    </form>
+    <p class="signup-prompt">Already set up? <a href="{{ url_for('login') }}">Return to sign in</a></p>
+  </main>
+</body>
+</html>
