@@ -1,9 +1,43 @@
 (() => {
   const chartDataElement = document.getElementById("chart-data");
+  const chartVisualizations = {};
   if (chartDataElement) {
     const data = JSON.parse(chartDataElement.textContent);
-    drawChart("trend-chart", data.monthly, "line");
-    drawChart("hotspot-chart", data.hotspots, "bar");
+    chartVisualizations.trend = drawChart("trend-chart", data.monthly, "line");
+    chartVisualizations.hotspots = drawChart("hotspot-chart", data.hotspots, "bar");
+
+    const filterForm = document.querySelector(".filter-panel");
+    let chartRequest;
+    let filterChangeTimer;
+    async function refreshCharts() {
+      chartRequest?.abort();
+      chartRequest = new AbortController();
+      const query = new URLSearchParams(new FormData(filterForm));
+      try {
+        const response = await fetch(`/api/chart-data?${query}`, {
+          headers: { Accept: "application/json" },
+          signal: chartRequest.signal,
+        });
+        if (!response.ok) throw new Error("Could not refresh the charts.");
+        const updated = await response.json();
+        chartVisualizations.trend?.(updated.monthly);
+        chartVisualizations.hotspots?.(updated.hotspots);
+      } catch (error) {
+        if (error.name !== "AbortError") {
+          console.error("Chart refresh failed:", error);
+        }
+      }
+    }
+
+    if (filterForm) {
+      filterForm.addEventListener("change", () => {
+        window.clearTimeout(filterChangeTimer);
+        filterChangeTimer = window.setTimeout(refreshCharts, 180);
+      });
+      window.setInterval(() => {
+        if (!document.hidden) refreshCharts();
+      }, 30000);
+    }
   }
 
   const mapElement = document.getElementById("hotspot-map");
@@ -156,8 +190,8 @@
     const canvas = document.getElementById(id);
     if (!canvas) return;
     const context = canvas.getContext("2d");
-    const labels = Array.isArray(series.labels) ? series.labels : [];
-    const values = Array.isArray(series.values) ? series.values : [];
+    let labels = Array.isArray(series.labels) ? series.labels : [];
+    let values = Array.isArray(series.values) ? series.values : [];
     const tooltip = document.createElement("div");
     tooltip.className = "chart-tooltip";
     tooltip.setAttribute("role", "status");
@@ -285,6 +319,14 @@
       }
     }
 
+    function update(nextSeries) {
+      labels = Array.isArray(nextSeries.labels) ? nextSeries.labels : [];
+      values = Array.isArray(nextSeries.values) ? nextSeries.values : [];
+      hoveredIndex = -1;
+      tooltip.hidden = true;
+      startAnimation();
+    }
+
     canvas.addEventListener("pointermove", (event) => {
       const rect = canvas.getBoundingClientRect();
       const x = event.clientX - rect.left;
@@ -321,5 +363,6 @@
       window.addEventListener("resize", startAnimation);
     }
     startAnimation();
+    return update;
   }
 })();

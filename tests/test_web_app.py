@@ -167,6 +167,26 @@ class RoadSafetyWebAppTests(unittest.TestCase):
         self.assertIn(b'id="chart-data"', dashboard.data)
         analytics = self.client.get("/analytics")
         self.assertIn(b'id="chart-data"', analytics.data)
+        self.assertIn(b"dashboard.js?v=", dashboard.data)
+
+    def test_chart_data_api_updates_for_current_filters(self):
+        response = self.client.get("/api/chart-data?county=MAKUENI")
+        self.assertEqual(response.status_code, 200)
+        data = response.get_json()
+        self.assertEqual(data["monthly"], {
+            "labels": ["2024-06"],
+            "values": [1],
+        })
+        self.assertEqual(data["hotspots"], {
+            "labels": ["KITUI SCHOOL"],
+            "values": [1],
+        })
+
+        filtered_response = self.client.get(
+            "/api/chart-data?county=NAIROBI"
+        )
+        self.assertEqual(filtered_response.status_code, 200)
+        self.assertEqual(filtered_response.get_json()["monthly"]["values"], [])
 
     def test_incident_risk_and_report_export(self):
         response = self.client.get("/incidents/A-100/risk")

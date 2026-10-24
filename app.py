@@ -198,6 +198,10 @@ def create_app(data_file=None, admin_password=None, database_path=None):
     app.config.update(
         ADMIN_PASSWORD_CONFIGURED=bool(configured_admin_password),
         DATABASE_PATH=database_path,
+        STATIC_ASSET_VERSION=str(max(
+            (PROJECT_DIR / "static" / filename).stat().st_mtime_ns
+            for filename in ("dashboard.js", "styles.css")
+        )),
         SESSION_COOKIE_HTTPONLY=True,
         SESSION_COOKIE_SAMESITE="Lax",
         SESSION_COOKIE_SECURE=os.environ.get("FLASK_COOKIE_SECURE") == "1",
@@ -267,6 +271,7 @@ def create_app(data_file=None, admin_password=None, database_path=None):
         return {
             "csrf_token": session.get("csrf_token", ""),
             "current_user": getattr(g, "current_user", None),
+            "static_asset_version": app.config["STATIC_ASSET_VERSION"],
         }
 
     @app.route("/login", methods=["GET", "POST"])
@@ -524,6 +529,13 @@ def create_app(data_file=None, admin_password=None, database_path=None):
             roads=roads,
             chart_data=_chart_data(incidents),
         )
+
+    @app.get("/api/chart-data")
+    def chart_data():
+        incidents, _, _, _ = _filter_incidents(
+            visible_incidents(), risk_assessment
+        )
+        return jsonify(_chart_data(incidents))
 
     @app.get("/incidents")
     def incidents():
