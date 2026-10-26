@@ -203,10 +203,6 @@ def create_app(data_file=None, admin_password=None, database_path=None):
     )
     if os.environ.get("RENDER") and not secret_key:
         raise RuntimeError("FLASK_SECRET_KEY must be configured on Render.")
-    if os.environ.get("RENDER") and not configured_database_path:
-        raise RuntimeError(
-            "TUSALAMA_DATABASE_PATH must point to persistent Render storage."
-        )
     app.secret_key = secret_key or secrets.token_hex(32)
     configured_admin_password = (
         admin_password or os.environ.get("ROAD_SAFETY_ADMIN_PASSWORD")

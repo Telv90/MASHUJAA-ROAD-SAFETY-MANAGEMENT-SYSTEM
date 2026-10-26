@@ -138,31 +138,30 @@ public internet. Set `FLASK_COOKIE_SECURE=1` when serving over HTTPS.
 
 ### Deploying on Render
 
-The repository includes [render.yaml](./render.yaml) with the web service,
-HTTPS cookie setting, generated session key, and a persistent disk mounted at
-`/var/data`. The disk requires a Render service plan that supports persistent
-disks and incurs the plan's applicable charges. For a service not managed as a
-Render Blueprint, configure the same settings on that service:
+The repository includes [render.yaml](./render.yaml) for a free web service
+with the requested `gunicorn app:app` command, HTTPS cookie setting, generated
+session key, and a SQLite database stored at `/tmp/tusalama.sqlite3`. The free
+service does not use a persistent disk:
 
 - **Build command:** `pip install -r requirements.txt`
-- **Start command:** `gunicorn --bind 0.0.0.0:$PORT app:app`
-- **Persistent disk mount path:** `/var/data`
-- **`TUSALAMA_DATABASE_PATH`:** `/var/data/tusalama.sqlite3`
+- **Start command:** `gunicorn app:app`
+- **`TUSALAMA_DATABASE_PATH`:** `/tmp/tusalama.sqlite3`
 - **`FLASK_SECRET_KEY`:** a persistent, private random value
 - **`FLASK_COOKIE_SECURE`:** `1`
 
-Set these values on Render before deploying. The app refuses to start on
-Render if the session key or persistent database path is missing instead of
-silently using an ephemeral database. For OpenAI analysis, also set
-`OPENAI_API_KEY` and optionally `OPENAI_MODEL` (default: `gpt-4o-mini`). Keep
-the key in Render's environment settings; never commit it.
+Set these values on Render before deploying. The session key must stay the
+same between deploys. **The SQLite database on `/tmp` is temporary**; accounts
+and incident records may disappear after a restart or redeploy, which can
+require account setup again. Do not treat the free deployment as durable
+storage for important records. A persistent disk or managed database is
+required to retain accounts and incidents reliably. For OpenAI analysis, also
+set `OPENAI_API_KEY` and optionally `OPENAI_MODEL` (default: `gpt-4o-mini`).
+Keep the key in Render's environment settings; never commit it.
 
 Confirm the Render service deploys this repository's `main` branch and deploy
 the latest commit. A `render.yaml` change does not update a manually configured
-service until its settings are applied. Before switching database paths, use
-the administrator database backup to preserve existing users and incidents;
-an empty newly mounted disk will otherwise require account setup again. Keep
-regular off-service backups as well.
+service until its settings are applied. Back up any available existing
+database before changing paths.
 
 ## Forecasting and maps
 

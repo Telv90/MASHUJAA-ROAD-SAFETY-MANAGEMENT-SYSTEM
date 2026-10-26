@@ -105,7 +105,7 @@ class RoadSafetyWebAppTests(unittest.TestCase):
             client.get("/login").data,
         )
 
-    def test_render_requires_persistent_session_and_database_settings(self):
+    def test_render_requires_stable_secret_and_allows_ephemeral_database(self):
         with patch.dict(
             "os.environ",
             {"RENDER": "true", "FLASK_SECRET_KEY": ""},
@@ -121,10 +121,15 @@ class RoadSafetyWebAppTests(unittest.TestCase):
             {"RENDER": "true", "FLASK_SECRET_KEY": "stable-test-key",
              "TUSALAMA_DATABASE_PATH": ""},
         ):
-            with self.assertRaisesRegex(
-                RuntimeError, "TUSALAMA_DATABASE_PATH"
-            ):
-                create_app(self.csv_path)
+            app = create_app(
+                self.csv_path,
+                database_path=self.temp_path / "render.sqlite3",
+            )
+        self.assertEqual(app.secret_key, "stable-test-key")
+        self.assertEqual(
+            app.config["DATABASE_PATH"],
+            self.temp_path / "render.sqlite3",
+        )
 
     def test_admin_setup_is_unavailable_after_any_account_exists(self):
         database_path = self.temp_path / "existing-user.sqlite3"
