@@ -38,6 +38,14 @@
     <div class="disclaimer">Rule-based suggestions are based on recorded text and should be reviewed by a Kenyan road-safety professional before action.</div>
   </section>
 
+  <section class="panel ai-analysis-panel">
+    <div class="panel-heading"><div><h2>AI evidence review</h2><p>Ask OpenAI to review historical hotspot projections, likely factors, and possible safety actions.</p></div><span class="badge badge-moderate">{{ 'OpenAI configured' if ai_configured else 'Setup required' }}</span></div>
+    <p class="panel-footnote">Only counts grouped by cause category, month, and location are sent. Names, incident references, coordinates, and raw report text are not sent. AI findings are hypotheses for professional review, not confirmed causes.</p>
+    <button class="button button-secondary" type="button" id="run-ai-analysis">Analyze recorded patterns</button>
+    <span id="ai-analysis-status" class="signals-status" role="status"></span>
+    <div id="ai-analysis-results" class="recommendation-grid" aria-live="polite"></div>
+  </section>
+
   <section class="panel social-panel">
     <div class="panel-heading"><div><h2>Live public-safety signals</h2><p>Posts and notices are leads for review, never confirmed incident records.</p></div><span class="badge badge-moderate">{{ 'Sources configured' if source_configuration.x or source_configuration.bluesky or source_configuration.rss else 'Setup required' }}</span></div>
     <div class="social-setup">

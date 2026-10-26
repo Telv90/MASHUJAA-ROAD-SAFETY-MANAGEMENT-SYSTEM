@@ -1,4 +1,5 @@
 import csv
+import hashlib
 import hmac
 import io
 import json
@@ -21,6 +22,7 @@ from flask import (
     request, send_file, session, url_for,
 )
 
+from Services.ai_safety_analysis import analyze_safety_data
 from Services.hotspot_forecasting import (
     forecast_hotspots,
     recommend_safety_actions,
@@ -165,43 +167,62 @@ def _filter_incidents(incidents, assessor):
 
 def _chart_data(incidents):
     monthly_counts = Counter()
+    monthly_fatal_incidents = Counter()
     for incident in incidents:
         incident_date = _parse_date(incident.get("date", ""))
         if incident_date:
-            monthly_counts[incident_date.strftime("%Y-%m")] += 1
+            month = incident_date.strftime("%Y-%m")
+            monthly_counts[month] += 1
+            if int(incident.get("fatalities") or 0) > 0:
+                monthly_fatal_incidents[month] += 1
     months = sorted(monthly_counts)
     hotspots = _hotspots(incidents)[:8]
     return {
         "monthly": {
             "labels": months,
             "values": [monthly_counts[month] for month in months],
+            "fatal_incidents": [
+                monthly_fatal_incidents[month] for month in months
+            ],
         },
         "hotspots": {
             "labels": [item["location"] for item in hotspots],
             "values": [item["accident_count"] for item in hotspots],
+            "fatal_incidents": [
+                item["fatal_incidents"] for item in hotspots
+            ],
         },
     }
 
 
 def create_app(data_file=None, admin_password=None, database_path=None):
     app = Flask(__name__)
-    app.secret_key = os.environ.get("FLASK_SECRET_KEY") or secrets.token_hex(32)
+    secret_key = os.environ.get("FLASK_SECRET_KEY")
+    configured_database_path = (
+        database_path or os.environ.get("TUSALAMA_DATABASE_PATH")
+    )
+    if os.environ.get("RENDER") and not secret_key:
+        raise RuntimeError("FLASK_SECRET_KEY must be configured on Render.")
+    if os.environ.get("RENDER") and not configured_database_path:
+        raise RuntimeError(
+            "TUSALAMA_DATABASE_PATH must point to persistent Render storage."
+        )
+    app.secret_key = secret_key or secrets.token_hex(32)
     configured_admin_password = (
         admin_password or os.environ.get("ROAD_SAFETY_ADMIN_PASSWORD")
     )
     csv_path = Path(data_file or PROJECT_DIR / "incidents.csv")
     database_path = Path(
-        database_path
-        or os.environ.get("TUSALAMA_DATABASE_PATH")
+        configured_database_path
         or PROJECT_DIR / "data" / "tusalama.sqlite3"
     )
     app.config.update(
         ADMIN_PASSWORD_CONFIGURED=bool(configured_admin_password),
         DATABASE_PATH=database_path,
-        STATIC_ASSET_VERSION=str(max(
-            (PROJECT_DIR / "static" / filename).stat().st_mtime_ns
+        STATIC_ASSET_VERSION=hashlib.sha256(b"".join(
+            (PROJECT_DIR / "static" / filename).read_bytes()
             for filename in ("dashboard.js", "styles.css")
-        )),
+        )).hexdigest()[:12],
         SESSION_COOKIE_HTTPONLY=True,
         SESSION_COOKIE_SAMESITE="Lax",
         SESSION_COOKIE_SECURE=os.environ.get("FLASK_COOKIE_SECURE") == "1",
@@ -237,7 +258,9 @@ def create_app(data_file=None, admin_password=None, database_path=None):
         session.setdefault("csrf_token", secrets.token_urlsafe(32))
         g.current_user = database.get_user(session.get("user_id"))
         if request.method == "POST":
-            token = request.form.get("csrf_token", "")
+            token = request.form.get(
+                "csrf_token", request.headers.get("X-CSRF-Token", "")
+            )
             if not hmac.compare_digest(token, session["csrf_token"]):
                 abort(400, description="Invalid form security token.")
         if request.endpoint in {"login", "signup", "setup_admin"}:
@@ -260,6 +283,7 @@ def create_app(data_file=None, admin_password=None, database_path=None):
         if (
             request.endpoint in {
                 "analytics", "intelligence", "public_signals",
+                "ai_analysis",
             }
             and g.current_user["role"] == "road_user"
         ):
@@ -751,6 +775,7 @@ def create_app(data_file=None, admin_password=None, database_path=None):
             "intelligence.html",
             forecast=forecast_hotspots(incidents),
             recommendations=recommend_safety_actions(incidents),
+            ai_configured=bool(os.environ.get("OPENAI_API_KEY")),
             source_configuration={
                 "x": bool(
                     os.environ.get("TUSALAMA_X_USER_IDS")
@@ -771,6 +796,27 @@ def create_app(data_file=None, admin_password=None, database_path=None):
             public_signals_cache["payload"] = fetch_public_safety_signals()
             public_signals_cache["fetched_at"] = now
         return jsonify(public_signals_cache["payload"])
+
+    @app.post("/api/ai-analysis")
+    def ai_analysis():
+        if not os.environ.get("OPENAI_API_KEY"):
+            return jsonify({
+                "error": "AI analysis is not configured. Add OPENAI_API_KEY to the service environment."
+            }), 503
+        try:
+            result = analyze_safety_data(visible_incidents())
+        except (
+            urllib.error.HTTPError,
+            urllib.error.URLError,
+            TimeoutError,
+            ValueError,
+            KeyError,
+        ):
+            app.logger.exception("OpenAI safety analysis request failed.")
+            return jsonify({
+                "error": "AI analysis could not be completed. Check the service configuration and try again."
+            }), 502
+        return jsonify(result)
 
     @app.get("/reports/export")
     def export_report():

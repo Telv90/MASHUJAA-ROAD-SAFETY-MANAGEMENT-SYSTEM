@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: tusalama-road-safety
+    runtime: python
+    plan: starter
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn --bind 0.0.0.0:$PORT app:app
+    disk:
+      name: tusalama-data
+      mountPath: /var/data
+      sizeGB: 1
+    envVars:
+      - key: FLASK_SECRET_KEY
+        generateValue: true
+      - key: TUSALAMA_DATABASE_PATH
+        value: /var/data/tusalama.sqlite3
+      - key: FLASK_COOKIE_SECURE
+        value: "1"

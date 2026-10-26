@@ -186,12 +186,90 @@
     });
   }
 
+  const aiButton = document.getElementById("run-ai-analysis");
+  if (aiButton) {
+    aiButton.addEventListener("click", async () => {
+      const status = document.getElementById("ai-analysis-status");
+      const results = document.getElementById("ai-analysis-results");
+      const csrfToken = document.querySelector(
+        'form[action$="/logout"] input[name="csrf_token"]',
+      )?.value;
+      aiButton.disabled = true;
+      status.textContent = "Analyzing recorded aggregates…";
+      results.replaceChildren();
+      try {
+        const response = await fetch("/api/ai-analysis", {
+          method: "POST",
+          headers: {
+            Accept: "application/json",
+            "X-CSRF-Token": csrfToken || "",
+          },
+        });
+        const payload = await response.json();
+        if (!response.ok) throw new Error(payload.error || "AI analysis failed.");
+
+        const summary = document.createElement("p");
+        summary.className = "ai-analysis-summary";
+        summary.textContent = payload.analysis.summary;
+        results.append(summary);
+        payload.analysis.future_hotspots.forEach((hotspot) => {
+          const card = document.createElement("article");
+          card.className = "recommendation-card";
+          const title = document.createElement("h3");
+          title.textContent = `${hotspot.location}, ${hotspot.county}`;
+          const projection = document.createElement("p");
+          projection.textContent = `${hotspot.expected_incidents} expected incidents · ${hotspot.confidence} confidence`;
+          const rationale = document.createElement("p");
+          rationale.textContent = hotspot.rationale;
+          card.append(title, projection, rationale);
+          results.append(card);
+        });
+        payload.analysis.likely_causes.forEach((finding) => {
+          const card = document.createElement("article");
+          card.className = "recommendation-card";
+          const title = document.createElement("h3");
+          title.textContent = finding.cause;
+          const evidence = document.createElement("p");
+          evidence.textContent = finding.evidence;
+          const confidence = document.createElement("small");
+          confidence.textContent = `Confidence: ${finding.confidence}`;
+          card.append(title, evidence, confidence);
+          results.append(card);
+        });
+        payload.analysis.actions.forEach((suggestion) => {
+          const card = document.createElement("article");
+          card.className = "recommendation-card";
+          const title = document.createElement("h3");
+          title.textContent = suggestion.action;
+          const reason = document.createElement("p");
+          reason.textContent = suggestion.reason;
+          const priority = document.createElement("small");
+          priority.textContent = `Priority: ${suggestion.priority}`;
+          card.append(title, reason, priority);
+          results.append(card);
+        });
+        const limitation = document.createElement("p");
+        limitation.className = "disclaimer";
+        limitation.textContent = payload.analysis.limitations;
+        results.append(limitation);
+        status.textContent = `Analyzed ${payload.evidence.record_count} incident records.`;
+      } catch (error) {
+        status.textContent = error.message;
+      } finally {
+        aiButton.disabled = false;
+      }
+    });
+  }
+
   function drawChart(id, series, type) {
     const canvas = document.getElementById(id);
     if (!canvas) return;
     const context = canvas.getContext("2d");
     let labels = Array.isArray(series.labels) ? series.labels : [];
     let values = Array.isArray(series.values) ? series.values : [];
+    let fatalIncidents = Array.isArray(series.fatal_incidents)
+      ? series.fatal_incidents
+      : [];
     const tooltip = document.createElement("div");
     tooltip.className = "chart-tooltip";
     tooltip.setAttribute("role", "status");
@@ -253,6 +331,27 @@
           y: padding.top + chartHeight
             - (chartHeight * value * progress) / maxValue,
         }));
+        const pointDepth = (index) =>
+          Math.min(14, 4 + (fatalIncidents[index] || 0) * 2);
+        context.strokeStyle = "#b9c9c0";
+        context.lineWidth = 1;
+        context.beginPath();
+        points.forEach((point, index) => {
+          const depth = pointDepth(index);
+          if (index === 0) {
+            context.moveTo(point.x + depth, point.y - depth * 0.8);
+          } else {
+            context.lineTo(point.x + depth, point.y - depth * 0.8);
+          }
+        });
+        context.stroke();
+        points.forEach((point, index) => {
+          const depth = pointDepth(index);
+          context.beginPath();
+          context.moveTo(point.x, point.y);
+          context.lineTo(point.x + depth, point.y - depth * 0.8);
+          context.stroke();
+        });
         context.strokeStyle = "#247652";
         context.lineWidth = 2;
         context.beginPath();
@@ -273,13 +372,30 @@
         values.forEach((value, index) => {
           const barHeight = (chartHeight * value * progress) / maxValue;
           const x = padding.left + slot * index + (slot - barWidth) / 2;
-          context.fillStyle = index === hoveredIndex ? "#247652" : "#b5121b";
-          context.fillRect(
-            x,
-            padding.top + chartHeight - barHeight,
-            barWidth,
-            barHeight,
+          const y = padding.top + chartHeight - barHeight;
+          const depthX = Math.min(
+            20, 5 + (fatalIncidents[index] || 0) * 3,
           );
+          const depthY = depthX * 0.8;
+          const color = index === hoveredIndex ? "#247652" : "#b5121b";
+          context.fillStyle = color;
+          context.fillRect(x, y, barWidth, barHeight);
+          context.beginPath();
+          context.moveTo(x, y);
+          context.lineTo(x + depthX, y - depthY);
+          context.lineTo(x + barWidth + depthX, y - depthY);
+          context.lineTo(x + barWidth, y);
+          context.closePath();
+          context.fillStyle = index === hoveredIndex ? "#4b9674" : "#d65a5f";
+          context.fill();
+          context.beginPath();
+          context.moveTo(x + barWidth, y);
+          context.lineTo(x + barWidth + depthX, y - depthY);
+          context.lineTo(x + barWidth + depthX, y + barHeight - depthY);
+          context.lineTo(x + barWidth, y + barHeight);
+          context.closePath();
+          context.fillStyle = index === hoveredIndex ? "#175239" : "#861018";
+          context.fill();
         });
       }
 
@@ -322,6 +438,9 @@
     function update(nextSeries) {
       labels = Array.isArray(nextSeries.labels) ? nextSeries.labels : [];
       values = Array.isArray(nextSeries.values) ? nextSeries.values : [];
+      fatalIncidents = Array.isArray(nextSeries.fatal_incidents)
+        ? nextSeries.fatal_incidents
+        : [];
       hoveredIndex = -1;
       tooltip.hidden = true;
       startAnimation();
@@ -344,7 +463,8 @@
         ));
       if (nextIndex === hoveredIndex) return;
       hoveredIndex = nextIndex;
-      tooltip.textContent = `${labels[nextIndex]}: ${values[nextIndex]} incident${values[nextIndex] === 1 ? "" : "s"}`;
+      const fatalCount = fatalIncidents[nextIndex] || 0;
+      tooltip.textContent = `${labels[nextIndex]}: ${values[nextIndex]} incident${values[nextIndex] === 1 ? "" : "s"} · ${fatalCount} fatal incident${fatalCount === 1 ? "" : "s"}`;
       tooltip.hidden = false;
       tooltip.style.left = `${Math.max(8, Math.min(rect.width - 190, x + 12))}px`;
       tooltip.style.top = `${Math.max(4, event.clientY - rect.top - 34)}px`;

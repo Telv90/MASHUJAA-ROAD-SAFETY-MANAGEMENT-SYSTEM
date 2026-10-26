@@ -7,6 +7,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from app import create_app
+from Services.ai_safety_analysis import build_analysis_evidence
 from storage.database_manager import DatabaseManager
 
 
@@ -104,6 +105,27 @@ class RoadSafetyWebAppTests(unittest.TestCase):
             client.get("/login").data,
         )
 
+    def test_render_requires_persistent_session_and_database_settings(self):
+        with patch.dict(
+            "os.environ",
+            {"RENDER": "true", "FLASK_SECRET_KEY": ""},
+        ):
+            with self.assertRaisesRegex(RuntimeError, "FLASK_SECRET_KEY"):
+                create_app(
+                    self.csv_path,
+                    database_path=self.temp_path / "render.sqlite3",
+                )
+
+        with patch.dict(
+            "os.environ",
+            {"RENDER": "true", "FLASK_SECRET_KEY": "stable-test-key",
+             "TUSALAMA_DATABASE_PATH": ""},
+        ):
+            with self.assertRaisesRegex(
+                RuntimeError, "TUSALAMA_DATABASE_PATH"
+            ):
+                create_app(self.csv_path)
+
     def test_admin_setup_is_unavailable_after_any_account_exists(self):
         database_path = self.temp_path / "existing-user.sqlite3"
         database = DatabaseManager(database_path)
@@ -176,10 +198,12 @@ class RoadSafetyWebAppTests(unittest.TestCase):
         self.assertEqual(data["monthly"], {
             "labels": ["2024-06"],
             "values": [1],
+            "fatal_incidents": [1],
         })
         self.assertEqual(data["hotspots"], {
             "labels": ["KITUI SCHOOL"],
             "values": [1],
+            "fatal_incidents": [1],
         })
 
         filtered_response = self.client.get(
@@ -187,6 +211,59 @@ class RoadSafetyWebAppTests(unittest.TestCase):
         )
         self.assertEqual(filtered_response.status_code, 200)
         self.assertEqual(filtered_response.get_json()["monthly"]["values"], [])
+
+    def test_ai_evidence_contains_aggregates_without_raw_report_fields(self):
+        evidence = build_analysis_evidence([{
+            "cause_code": "PRIVATE-REFERENCE",
+            "date": "2024-06-25",
+            "county": "MAKUENI",
+            "place": "KITUI SCHOOL",
+            "accident_info": "HEAD ON COLLISION",
+            "victim": "M/CYCLIST",
+            "fatalities": "1",
+            "latitude": "-1.0",
+            "longitude": "37.0",
+        }])
+        self.assertEqual(evidence["record_count"], 1)
+        self.assertEqual(evidence["fatalities"], 1)
+        self.assertEqual(
+            evidence["cause_category_counts"]["motorcycle_risk"], 1
+        )
+        self.assertNotIn("cause_code", evidence)
+        self.assertNotIn("accident_info", evidence)
+        self.assertNotIn("latitude", evidence)
+        self.assertNotIn("longitude", evidence)
+
+    def test_ai_analysis_requires_configuration_and_valid_csrf(self):
+        with patch.dict("os.environ", {"OPENAI_API_KEY": ""}):
+            response = self.client.post(
+                "/api/ai-analysis",
+                headers={"X-CSRF-Token": self.csrf_token()},
+            )
+        self.assertEqual(response.status_code, 503)
+        self.assertIn("OPENAI_API_KEY", response.get_json()["error"])
+
+    def test_ai_analysis_returns_service_result(self):
+        result = {
+            "analysis": {
+                "summary": "Observed patterns are limited.",
+                "future_hotspots": [],
+                "likely_causes": [],
+                "actions": [],
+                "limitations": "No exposure data was available.",
+            },
+            "evidence": {"record_count": 1},
+        }
+        with (
+            patch.dict("os.environ", {"OPENAI_API_KEY": "test-key"}),
+            patch("app.analyze_safety_data", return_value=result),
+        ):
+            response = self.client.post(
+                "/api/ai-analysis",
+                headers={"X-CSRF-Token": self.csrf_token()},
+            )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.get_json(), result)
 
     def test_incident_risk_and_report_export(self):
         response = self.client.get("/incidents/A-100/risk")

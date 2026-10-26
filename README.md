@@ -14,6 +14,9 @@ menu-driven Python application.
   select a point to populate coordinates.
 - Forecast hotspot trends only when recent data is sufficient, and present
   evidence-linked suggestions for professional review.
+- Optionally request OpenAI's review of historical hotspot projections,
+  aggregate likely contributing factors, and possible safety actions; raw
+  reports and coordinates are not sent to OpenAI.
 - Optionally display configured public safety signals from Bluesky, the official
   X API, and approved Kenyan government RSS domains. Signals are unverified
   leads and are not automatically saved as incidents.
@@ -135,16 +138,31 @@ public internet. Set `FLASK_COOKIE_SECURE=1` when serving over HTTPS.
 
 ### Deploying on Render
 
-Create a Render Web Service connected to this repository and use:
+The repository includes [render.yaml](./render.yaml) with the web service,
+HTTPS cookie setting, generated session key, and a persistent disk mounted at
+`/var/data`. The disk requires a Render service plan that supports persistent
+disks and incurs the plan's applicable charges. For a service not managed as a
+Render Blueprint, configure the same settings on that service:
 
 - **Build command:** `pip install -r requirements.txt`
-- **Start command:** `gunicorn app:app`
+- **Start command:** `gunicorn --bind 0.0.0.0:$PORT app:app`
+- **Persistent disk mount path:** `/var/data`
+- **`TUSALAMA_DATABASE_PATH`:** `/var/data/tusalama.sqlite3`
+- **`FLASK_SECRET_KEY`:** a persistent, private random value
+- **`FLASK_COOKIE_SECURE`:** `1`
 
-Set the required environment variables in Render before the first deployment.
-For SQLite, attach a persistent disk mounted at `/var/data` and set
-`TUSALAMA_DATABASE_PATH` to `/var/data/tusalama.sqlite3`; otherwise the database
-may be lost when the service is redeployed. See Render's current persistent-disk
-plan and availability limits before relying on SQLite for production backups.
+Set these values on Render before deploying. The app refuses to start on
+Render if the session key or persistent database path is missing instead of
+silently using an ephemeral database. For OpenAI analysis, also set
+`OPENAI_API_KEY` and optionally `OPENAI_MODEL` (default: `gpt-4o-mini`). Keep
+the key in Render's environment settings; never commit it.
+
+Confirm the Render service deploys this repository's `main` branch and deploy
+the latest commit. A `render.yaml` change does not update a manually configured
+service until its settings are applied. Before switching database paths, use
+the administrator database backup to preserve existing users and incidents;
+an empty newly mounted disk will otherwise require account setup again. Keep
+regular off-service backups as well.
 
 ## Forecasting and maps
 
@@ -152,6 +170,16 @@ Hotspot forecasts use explainable historical trends, not a trained machine
 learning model or a crash-probability guarantee. Forecasts are withheld when
 data is stale or insufficient. Recommendations are prompts for qualified road
 safety professionals, not automatic instructions.
+
+Interactive charts recalculate from current incident records and filters,
+with an interactive 3D-style visual treatment whose depth represents fatal
+incidents. The optional OpenAI feature reviews the existing evidence-qualified
+historical forecast and sends only aggregated month, cause-category, and
+hotspot counts; it does not send names, incident references, coordinates, or
+raw report text. The numeric forecast remains an explainable historical trend,
+not an independent AI model, verified accident causation, or an
+exposure-adjusted prediction. No TomTom or ShareBarabara integration is
+enabled.
 
 Maps use Leaflet and OpenStreetMap. Location lookup uses the Nominatim service
 and requires an internet connection. Google Maps integration is not currently
