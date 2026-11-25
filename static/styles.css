@@ -55,6 +55,8 @@ a { color: inherit; text-decoration: none; }
 .button-primary:hover { background: var(--green-dark); }
 .button-secondary { background: #fff; border-color: #dfe5e1; color: #435049; }
 .button-secondary:hover { background: #f7f9f7; }
+.button-danger { border-color: #efcfcd; color: #bd514c; }
+.button-danger:hover { background: #fff5f4; border-color: #e7b8b5; color: #913a36; }
 .button-small { height: 34px; padding: 0 11px; font-size: 11px; }
 .stat-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 15px; margin-bottom: 19px; }
 .stat-card, .panel { background: var(--paper); border: 1px solid var(--line); border-radius: 10px; box-shadow: var(--shadow); }
@@ -233,6 +235,7 @@ code { background: #f2f5f2; border-radius: 4px; padding: 2px 4px; font-size: .95
 .pending-panel h1 { font: 700 24px Manrope, sans-serif; margin: 0; }
 .pending-panel p { max-width: 430px; color: var(--muted); font-size: 12px; line-height: 1.7; margin: 9px 0 20px; }
 .pending-icon { width: 46px; height: 46px; display: grid; place-items: center; border-radius: 50%; background: #f7eded; color: var(--red); font-size: 23px; margin-bottom: 15px; }
+.pending-icon-declined { background: #fdeceb; color: #bd514c; }
 .forecast-panel, .recommendations-panel, .social-panel { margin-bottom: 17px; }
 .forecast-caveat { display: grid; gap: 6px; padding: 13px; margin-bottom: 15px; background: #f6f8f6; border-left: 3px solid var(--green); border-radius: 4px; }
 .forecast-caveat strong { font-size: 11px; line-height: 1.55; }

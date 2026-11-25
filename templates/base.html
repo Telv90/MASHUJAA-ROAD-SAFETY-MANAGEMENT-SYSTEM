@@ -18,7 +18,7 @@
       <a class="{% if request.endpoint == 'dashboard' %}active{% endif %}" href="{{ url_for('dashboard') }}"><span class="nav-icon">⌂</span>Overview</a>
       <a class="{% if request.endpoint in ('incidents', 'new_incident', 'edit_incident', 'assess_incident') %}active{% endif %}" href="{{ url_for('incidents') }}"><span class="nav-icon">▤</span>Incidents</a>
       {% if current_user.role != 'road_user' %}<a class="{% if request.endpoint == 'analytics' %}active{% endif %}" href="{{ url_for('analytics') }}"><span class="nav-icon">◷</span>Hotspot analysis</a><a class="{% if request.endpoint == 'intelligence' %}active{% endif %}" href="{{ url_for('intelligence') }}"><span class="nav-icon">✳</span>Safety intelligence</a>{% endif %}
-      {% if current_user.role == 'admin' %}<a class="{% if request.endpoint == 'admin' %}active{% endif %}" href="{{ url_for('admin') }}"><span class="nav-icon">⚙</span>Admin</a>{% endif %}
+      {% if current_user.role == 'admin' %}<a class="{% if request.endpoint == 'admin' %}active{% endif %}" href="{{ url_for('admin') }}"><span class="nav-icon">⚙</span>Admin</a><a class="{% if request.endpoint == 'admin_users' %}active{% endif %}" href="{{ url_for('admin_users') }}"><span class="nav-icon">▦</span>User management</a>{% endif %}
     </nav>
     <div class="sidebar-note">
       <span class="note-dot"></span>

@@ -45,7 +45,7 @@ class DatabaseManager:
                     email TEXT NOT NULL UNIQUE COLLATE NOCASE,
                     password_hash TEXT NOT NULL,
                     role TEXT NOT NULL CHECK (role IN ('admin', 'agency', 'road_user')),
-                    status TEXT NOT NULL CHECK (status IN ('active', 'pending')),
+                    status TEXT NOT NULL CHECK (status IN ('active', 'pending', 'suspended', 'declined')),
                     agency_name TEXT NOT NULL DEFAULT '',
                     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
                 );
@@ -74,7 +74,48 @@ class DatabaseManager:
                     key TEXT PRIMARY KEY,
                     value TEXT NOT NULL
                 );
+                CREATE TABLE IF NOT EXISTS activity_log (
+                    id INTEGER PRIMARY KEY,
+                    actor_user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+                    actor_username TEXT NOT NULL DEFAULT '',
+                    action TEXT NOT NULL,
+                    target_type TEXT NOT NULL DEFAULT '',
+                    target_id TEXT NOT NULL DEFAULT '',
+                    details TEXT NOT NULL DEFAULT '',
+                    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+                );
+                CREATE INDEX IF NOT EXISTS activity_log_created_at_idx
+                    ON activity_log(created_at DESC, id DESC);
             """)
+            self._migrate_user_status_constraint(connection)
+
+    def _migrate_user_status_constraint(self, connection):
+        row = connection.execute(
+            "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'users'"
+        ).fetchone()
+        sql = (row["sql"] or "") if row else ""
+        if "'declined'" in sql:
+            return
+        connection.executescript("""
+            PRAGMA foreign_keys = OFF;
+            CREATE TABLE users_migrated (
+                id INTEGER PRIMARY KEY,
+                username TEXT NOT NULL UNIQUE COLLATE NOCASE,
+                email TEXT NOT NULL UNIQUE COLLATE NOCASE,
+                password_hash TEXT NOT NULL,
+                role TEXT NOT NULL CHECK (role IN ('admin', 'agency', 'road_user')),
+                status TEXT NOT NULL CHECK (status IN ('active', 'pending', 'suspended', 'declined')),
+                agency_name TEXT NOT NULL DEFAULT '',
+                created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+            );
+            INSERT INTO users_migrated
+                (id, username, email, password_hash, role, status, agency_name, created_at)
+            SELECT id, username, email, password_hash, role, status, agency_name, created_at
+            FROM users;
+            DROP TABLE users;
+            ALTER TABLE users_migrated RENAME TO users;
+            PRAGMA foreign_keys = ON;
+        """)
 
     def migrate_csv(self, csv_path):
         """Import a legacy CSV once, retaining the first exact duplicate only."""
@@ -226,6 +267,17 @@ class DatabaseManager:
             ).fetchall()
         return [dict(row) for row in rows]
 
+    def list_all_users(self):
+        with self._connect() as connection:
+            rows = connection.execute(
+                "SELECT id, username, email, role, status, agency_name, created_at "
+                "FROM users WHERE role IN ('agency', 'road_user') "
+                "ORDER BY CASE role WHEN 'agency' THEN 0 ELSE 1 END, "
+                "CASE status WHEN 'pending' THEN 0 WHEN 'declined' THEN 1 ELSE 2 END, "
+                "created_at DESC, username COLLATE NOCASE"
+            ).fetchall()
+        return [dict(row) for row in rows]
+
     def approve_agency(self, user_id):
         with self._connect() as connection:
             cursor = connection.execute(
@@ -234,6 +286,110 @@ class DatabaseManager:
                 (user_id,),
             )
             return cursor.rowcount == 1
+
+    def decline_agency(self, user_id):
+        with self._connect() as connection:
+            cursor = connection.execute(
+                "UPDATE users SET status = 'declined' "
+                "WHERE id = ? AND role = 'agency' AND status = 'pending'",
+                (user_id,),
+            )
+            return cursor.rowcount == 1
+
+    def set_user_status(self, user_id, status, actor=None):
+        if status not in {"active", "pending", "suspended", "declined"}:
+            return False
+        with self._connect() as connection:
+            user = connection.execute(
+                "SELECT id, username, role, status FROM users WHERE id = ?",
+                (user_id,),
+            ).fetchone()
+            if not user or user["role"] == "admin":
+                return False
+            if user["status"] == status:
+                return True
+            cursor = connection.execute(
+                "UPDATE users SET status = ? WHERE id = ? AND role != 'admin'",
+                (status, user_id),
+            )
+            changed = cursor.rowcount == 1
+        if changed:
+            self.log_activity(
+                actor_user_id=(actor or {}).get("id"),
+                actor_username=(actor or {}).get("username", "system"),
+                action="user_status_changed",
+                target_type="user",
+                target_id=str(user_id),
+                details=f"Set {user['username']} ({user['role']}) status to {status}",
+            )
+        return changed
+
+    def list_accounts(self):
+        with self._connect() as connection:
+            rows = connection.execute(
+                "SELECT id, username, email, role, status, agency_name, created_at "
+                "FROM users "
+                "ORDER BY CASE role WHEN 'admin' THEN 0 WHEN 'agency' THEN 1 ELSE 2 END, "
+                "CASE status WHEN 'pending' THEN 0 WHEN 'suspended' THEN 1 ELSE 2 END, "
+                "created_at DESC, username COLLATE NOCASE"
+            ).fetchall()
+        return [dict(row) for row in rows]
+
+    def count_users(self, role=None, status=None):
+        query = "SELECT COUNT(*) FROM users WHERE 1 = 1"
+        params = []
+        if role:
+            query += " AND role = ?"
+            params.append(role)
+        if status:
+            query += " AND status = ?"
+            params.append(status)
+        with self._connect() as connection:
+            return connection.execute(query, params).fetchone()[0]
+
+    def log_activity(
+        self, action, actor_user_id=None, actor_username="", target_type="",
+        target_id="", details="",
+    ):
+        with self._connect() as connection:
+            connection.execute(
+                "INSERT INTO activity_log "
+                "(actor_user_id, actor_username, action, target_type, target_id, details) "
+                "VALUES (?, ?, ?, ?, ?, ?)",
+                (
+                    actor_user_id,
+                    actor_username or "",
+                    action,
+                    target_type,
+                    str(target_id or ""),
+                    details or "",
+                ),
+            )
+
+    def list_activity(self, limit=100):
+        limit = max(1, min(int(limit or 100), 500))
+        with self._connect() as connection:
+            rows = connection.execute(
+                "SELECT id, actor_user_id, actor_username, action, target_type, "
+                "target_id, details, created_at "
+                "FROM activity_log ORDER BY created_at DESC, id DESC LIMIT ?",
+                (limit,),
+            ).fetchall()
+        return [dict(row) for row in rows]
+
+    def recent_incidents(self, limit=20):
+        limit = max(1, min(int(limit or 20), 200))
+        with self._connect() as connection:
+            rows = connection.execute(
+                "SELECT i.id, i.cause_code, i.date, i.time, i.county, i.road, "
+                "i.place, i.accident_info, i.fatalities, i.created_at, "
+                "u.username AS reporter_username, u.role AS reporter_role, "
+                "u.agency_name AS reporter_agency "
+                "FROM incidents i LEFT JOIN users u ON u.id = i.reporter_id "
+                "ORDER BY i.created_at DESC, i.id DESC LIMIT ?",
+                (limit,),
+            ).fetchall()
+        return [dict(row) for row in rows]
 
     def count_incidents(self):
         with self._connect() as connection:

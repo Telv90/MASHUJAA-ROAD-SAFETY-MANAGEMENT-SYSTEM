@@ -265,13 +265,14 @@ def create_app(data_file=None, admin_password=None, database_path=None):
             return redirect(url_for("login"))
         if (
             g.current_user["role"] == "agency"
-            and g.current_user["status"] == "pending"
+            and g.current_user["status"] in {"pending", "declined"}
             and request.endpoint not in {"agency_pending", "profile", "logout"}
         ):
             return redirect(url_for("agency_pending"))
         if (
             request.endpoint in {
-                "admin", "approve_agency", "database_backup",
+                "admin", "admin_users", "approve_agency", "decline_agency",
+                "database_backup",
             }
             and g.current_user["role"] != "admin"
         ):
@@ -296,6 +297,10 @@ def create_app(data_file=None, admin_password=None, database_path=None):
 
     @app.route("/login", methods=["GET", "POST"])
     def login():
+        if g.current_user:
+            if g.current_user["role"] == "agency" and g.current_user["status"] == "pending":
+                return redirect(url_for("agency_pending"))
+            return redirect(url_for("dashboard"))
         if request.method == "POST":
             account = database.authenticate(
                 request.form.get("username", ""),
@@ -307,7 +312,7 @@ def create_app(data_file=None, admin_password=None, database_path=None):
             session.clear()
             session["user_id"] = account["id"]
             session["csrf_token"] = secrets.token_urlsafe(32)
-            if account["role"] == "agency" and account["status"] == "pending":
+            if account["role"] == "agency" and account["status"] in {"pending", "declined"}:
                 return redirect(url_for("agency_pending"))
             destination = request.args.get("next", "")
             parsed_destination = urlsplit(destination)
@@ -334,6 +339,10 @@ def create_app(data_file=None, admin_password=None, database_path=None):
 
     @app.route("/setup-admin", methods=["GET", "POST"])
     def setup_admin():
+        if g.current_user:
+            if g.current_user["role"] == "agency" and g.current_user["status"] in {"pending", "declined"}:
+                return redirect(url_for("agency_pending"))
+            return redirect(url_for("dashboard"))
         if (
             app.config["ADMIN_PASSWORD_CONFIGURED"]
             or not database.can_bootstrap_admin()
@@ -384,6 +393,10 @@ def create_app(data_file=None, admin_password=None, database_path=None):
 
     @app.route("/signup", methods=["GET", "POST"])
     def signup():
+        if g.current_user:
+            if g.current_user["role"] == "agency" and g.current_user["status"] in {"pending", "declined"}:
+                return redirect(url_for("agency_pending"))
+            return redirect(url_for("dashboard"))
         if (
             not app.config["ADMIN_PASSWORD_CONFIGURED"]
             and database.can_bootstrap_admin()
@@ -437,7 +450,7 @@ def create_app(data_file=None, admin_password=None, database_path=None):
 
     @app.get("/agency-pending")
     def agency_pending():
-        return render_template("agency_pending.html")
+        return render_template("agency_pending.html", account=g.current_user)
 
     @app.get("/profile")
     def profile():
@@ -449,6 +462,20 @@ def create_app(data_file=None, admin_password=None, database_path=None):
             flash("Agency account approved.", "success")
         else:
             flash("Pending agency account not found.", "error")
+        next_page = request.form.get("next", "")
+        if next_page.startswith("/admin") and "\\" not in next_page:
+            return redirect(next_page)
+        return redirect(url_for("admin"))
+
+    @app.post("/admin/agencies/<int:user_id>/decline")
+    def decline_agency(user_id):
+        if database.decline_agency(user_id):
+            flash("Agency verification declined.", "success")
+        else:
+            flash("Pending agency account not found.", "error")
+        next_page = request.form.get("next", "")
+        if next_page.startswith("/admin") and "\\" not in next_page:
+            return redirect(next_page)
         return redirect(url_for("admin"))
 
     @app.get("/admin/database-backup")
@@ -525,6 +552,21 @@ def create_app(data_file=None, admin_password=None, database_path=None):
                 os.environ.get("TUSALAMA_BSKY_HANDLES")
                 or os.environ.get("TUSALAMA_X_USER_IDS")
             ),
+        )
+
+    @app.get("/admin/users")
+    def admin_users():
+        users = database.list_all_users()
+        agencies = [user for user in users if user["role"] == "agency"]
+        road_users = [user for user in users if user["role"] == "road_user"]
+        return render_template(
+            "admin_users.html",
+            users=users,
+            agencies=agencies,
+            road_users=road_users,
+            pending_count=sum(1 for agency in agencies if agency["status"] == "pending"),
+            active_agency_count=sum(1 for agency in agencies if agency["status"] == "active"),
+            declined_count=sum(1 for agency in agencies if agency["status"] == "declined"),
         )
 
     @app.get("/")

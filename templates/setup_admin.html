@@ -4,11 +4,11 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Set up administrator | Tusalama</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css', v=static_asset_version) }}">
 </head>
 <body class="login-page">
   <main class="login-card signup-card">
-    <a class="brand login-brand" href="{{ url_for('login') }}"><img class="brand-logo" src="{{ url_for('static', filename='tusalama-logo.svg') }}" alt=""><span><strong>TUSALAMA</strong><small>ROAD SAFETY</small></span></a>
+    <a class="brand login-brand" href="{{ url_for('login') }}"><img class="brand-logo" src="{{ url_for('static', filename='tusalama-logo.svg', v=static_asset_version) }}" alt="Tusalama logo"><span><strong>TUSALAMA</strong><small>ROAD SAFETY</small></span></a>
     <div class="eyebrow">ONE-TIME INITIAL SETUP</div>
     <h1>Create administrator</h1>
     <p class="login-intro">Set up the first account for this Tusalama installation. It will have full administrator access.</p>

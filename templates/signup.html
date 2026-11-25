@@ -4,11 +4,11 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Create account | Tusalama</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css', v=static_asset_version) }}">
 </head>
 <body class="login-page">
   <main class="login-card signup-card">
-    <a class="brand login-brand" href="{{ url_for('login') }}"><img class="brand-logo" src="{{ url_for('static', filename='tusalama-logo.svg') }}" alt=""><span><strong>TUSALAMA</strong><small>ROAD SAFETY</small></span></a>
+    <a class="brand login-brand" href="{{ url_for('login') }}"><img class="brand-logo" src="{{ url_for('static', filename='tusalama-logo.svg', v=static_asset_version) }}" alt="Tusalama logo"><span><strong>TUSALAMA</strong><small>ROAD SAFETY</small></span></a>
     <div class="eyebrow">CREATE YOUR ACCOUNT</div>
     <h1>Join Tusalama</h1>
     <p class="login-intro">Road users can report incidents. Agency access is enabled after administrator verification.</p>

@@ -3,15 +3,15 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Administrator sign in | Tusalama</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+  <title>Sign in | Tusalama</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css', v=static_asset_version) }}">
 </head>
 <body class="login-page">
   <main class="login-card">
-    <a class="brand login-brand" href="{{ url_for('login') }}"><img class="brand-logo" src="{{ url_for('static', filename='tusalama-logo.svg') }}" alt=""><span><strong>TUSALAMA</strong><small>ROAD SAFETY</small></span></a>
+    <a class="brand login-brand" href="{{ url_for('login') }}"><img class="brand-logo" src="{{ url_for('static', filename='tusalama-logo.svg', v=static_asset_version) }}" alt="Tusalama logo"><span><strong>TUSALAMA</strong><small>ROAD SAFETY</small></span></a>
     <div class="eyebrow">SECURE ACCOUNT ACCESS</div>
-    <h1>Welcome back</h1>
-    <p class="login-intro">Sign in to access your road safety workspace.</p>
+    <h1>Sign in</h1>
+    <p class="login-intro">Use your username or email and password to access your Tusalama workspace.</p>
     {% with messages = get_flashed_messages(with_categories=true) %}
       {% if messages %}{% for category, message in messages %}<div class="flash flash-{{ category }}">{{ message }}</div>{% endfor %}{% endif %}
     {% endwith %}
@@ -25,7 +25,7 @@
         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
         <button type="submit" class="button button-primary login-submit">Sign in <span>→</span></button>
       </form>
-      <p class="signup-prompt">New to Tusalama? <a href="{{ url_for('signup') }}">Create an account</a></p>
+      <p class="signup-prompt">Don't have an account? <a href="{{ url_for('signup') }}">Create one</a></p>
     {% else %}
       <div class="setup-notice"><strong>Administrator account not configured</strong><p>Set <code>ROAD_SAFETY_ADMIN_PASSWORD</code>, <code>ROAD_SAFETY_ADMIN_USERNAME</code>, and <code>ROAD_SAFETY_ADMIN_EMAIL</code> in the environment, then restart the app. See README for setup details.</p></div>
     {% endif %}
